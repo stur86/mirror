@@ -1,0 +1,59 @@
+{
+  "name": "mirror",
+  "version": "0.1.0",
+  "description": "AI-assisted translation editor",
+  "main": "electron-dist/main.js",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:compile": "bun build electron/main.ts --outdir electron-dist --target node && bun build electron/preload.ts --outdir electron-dist --target node",
+    "electron:dev": "bun run electron:compile && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "bun run build && bun run electron:compile && electron-builder",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.2",
+    "concurrently": "^9.2.1",
+    "electron": "^40.1.0",
+    "electron-builder": "^26.7.0",
+    "sass": "^1.97.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.mirror.app",
+    "productName": "Mirror",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron-dist/**/*"
+    ],
+    "linux": {
+      "target": ["AppImage", "deb"]
+    },
+    "mac": {
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis", "portable"]
+    }
+  },
+  "dependencies": {
+    "@blueprintjs/core": "^6.7.0",
+    "@blueprintjs/icons": "^6.5.1",
+    "i18next": "^25.8.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-i18next": "^16.5.4",
+    "yaml": "^2.8.2"
+  }
+}

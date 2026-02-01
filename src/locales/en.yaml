@@ -1,0 +1,33 @@
+app:
+  name: Mirror
+  tagline: AI-assisted translation editor
+  version: Version {{version}}
+
+menu:
+  file: File
+  newFile: New File
+  loadFile: Load File
+  exit: Exit
+  help: Help
+  about: About
+
+actions:
+  getStarted: Get Started
+  save: Save
+  cancel: Cancel
+  confirm: Confirm
+  delete: Delete
+  edit: Edit
+  close: Close
+
+settings:
+  title: Settings
+  language: Language
+  theme: Theme
+  dark: Dark
+  light: Light
+
+about:
+  title: About Mirror
+  description: An AI-assisted translation editor designed for pleasant, focused work.
+  license: MIT License
