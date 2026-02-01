@@ -71,8 +71,8 @@ export function MenuBar({ onThemeToggle, isDark }: MenuBarProps) {
             content={fileMenu}
             placement="bottom-start"
             minimal
-            usePortal={false}
             popoverClassName="menu-popover"
+            portalContainer={document.body}
           >
             <Button variant="minimal" text={t('menu.file')} />
           </Popover>
@@ -80,8 +80,8 @@ export function MenuBar({ onThemeToggle, isDark }: MenuBarProps) {
             content={helpMenu}
             placement="bottom-start"
             minimal
-            usePortal={false}
             popoverClassName="menu-popover"
+            portalContainer={document.body}
           >
             <Button variant="minimal" text={t('menu.help')} />
           </Popover>
