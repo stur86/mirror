@@ -64,19 +64,31 @@ export function MenuBar({ onThemeToggle, isDark }: MenuBarProps) {
   return (
     <>
       <Navbar className="menu-bar">
-        <NavbarGroup align={Alignment.LEFT}>
+        <NavbarGroup align={Alignment.START}>
           <NavbarHeading>{t('app.name')}</NavbarHeading>
           <NavbarDivider />
-          <Popover content={fileMenu} placement="bottom-start" minimal>
-            <Button minimal text={t('menu.file')} />
+          <Popover
+            content={fileMenu}
+            placement="bottom-start"
+            minimal
+            usePortal={false}
+            popoverClassName="menu-popover"
+          >
+            <Button variant="minimal" text={t('menu.file')} />
           </Popover>
-          <Popover content={helpMenu} placement="bottom-start" minimal>
-            <Button minimal text={t('menu.help')} />
+          <Popover
+            content={helpMenu}
+            placement="bottom-start"
+            minimal
+            usePortal={false}
+            popoverClassName="menu-popover"
+          >
+            <Button variant="minimal" text={t('menu.help')} />
           </Popover>
         </NavbarGroup>
-        <NavbarGroup align={Alignment.RIGHT}>
+        <NavbarGroup align={Alignment.END}>
           <Button
-            minimal
+            variant='minimal'
             icon={isDark ? 'flash' : 'moon'}
             onClick={onThemeToggle}
             aria-label={isDark ? t('settings.light') : t('settings.dark')}

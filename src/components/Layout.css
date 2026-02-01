@@ -1,11 +1,31 @@
 .layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .menu-bar {
   flex-shrink: 0;
+  overflow: visible;
+}
+
+.menu-bar .bp6-navbar-group {
+  overflow: visible;
+}
+
+/* Fix popover positioning - override Floating UI absolute positioning */
+.menu-bar .bp6-popover-container {
+  position: relative !important;
+  display: inline-block;
+}
+
+.menu-bar .bp6-popover {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  transform: none !important;
+  margin-top: 4px;
 }
 
 .layout-main {
