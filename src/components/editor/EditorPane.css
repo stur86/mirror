@@ -1,0 +1,148 @@
+.editor-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.editor-pane__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  height: 36px;
+  border-bottom: 1px solid var(--pane-border-color);
+  flex-shrink: 0;
+}
+
+.editor-pane__label {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+.editor-pane__header-action {
+  margin-left: auto;
+}
+
+.editor-pane__content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem;
+}
+
+/* TipTap Editor Styling */
+.editor-pane__content .ProseMirror {
+  outline: none;
+  min-height: 100%;
+}
+
+.editor-pane__content .ProseMirror > * + * {
+  margin-top: 0.75em;
+}
+
+.editor-pane__content .ProseMirror p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.editor-pane__content .ProseMirror h1,
+.editor-pane__content .ProseMirror h2,
+.editor-pane__content .ProseMirror h3,
+.editor-pane__content .ProseMirror h4,
+.editor-pane__content .ProseMirror h5,
+.editor-pane__content .ProseMirror h6 {
+  line-height: 1.3;
+  margin: 0;
+}
+
+.editor-pane__content .ProseMirror h1 {
+  font-size: 1.75em;
+}
+
+.editor-pane__content .ProseMirror h2 {
+  font-size: 1.5em;
+}
+
+.editor-pane__content .ProseMirror h3 {
+  font-size: 1.25em;
+}
+
+.editor-pane__content .ProseMirror blockquote {
+  border-left: 3px solid var(--blockquote-border);
+  padding-left: 1rem;
+  margin: 0;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.editor-pane__content .ProseMirror ul,
+.editor-pane__content .ProseMirror ol {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.editor-pane__content .ProseMirror li {
+  margin: 0.25em 0;
+}
+
+.editor-pane__content .ProseMirror code {
+  background: var(--code-bg);
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.editor-pane__content .ProseMirror pre {
+  background: var(--code-bg);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.editor-pane__content .ProseMirror pre code {
+  background: none;
+  padding: 0;
+}
+
+.editor-pane__content .ProseMirror hr {
+  border: none;
+  border-top: 1px solid var(--pane-border-color);
+  margin: 1rem 0;
+}
+
+/* Placeholder styling */
+.editor-pane__content .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--placeholder-color);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Dark theme variables */
+.bp6-dark .editor-pane {
+  --pane-border-color: rgba(255, 255, 255, 0.1);
+  --blockquote-border: rgba(157, 142, 194, 0.5);
+  --code-bg: rgba(0, 0, 0, 0.3);
+  --placeholder-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Light theme variables */
+body:not(.bp6-dark) .editor-pane {
+  --pane-border-color: rgba(0, 0, 0, 0.1);
+  --blockquote-border: rgba(107, 74, 158, 0.4);
+  --code-bg: rgba(0, 0, 0, 0.05);
+  --placeholder-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Source pane (read-only) styling */
+.editor-pane--source .editor-pane__content .ProseMirror {
+  cursor: default;
+}
