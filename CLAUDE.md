@@ -89,6 +89,10 @@ const { t } = useTranslation();
 // t('menu.file'), t('app.name'), etc.
 ```
 
+## Editor Features
+
+The main editor uses tiptap (ProseMirror-based) for rich text editing and has two split panes, the left for source text and the right for translation. These can be scrolled independently or linked to scroll by paragraph.
+
 ## Guidelines
 
 - Use `bun` instead of npm/yarn
