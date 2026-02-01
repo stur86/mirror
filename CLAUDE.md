@@ -93,6 +93,10 @@ const { t } = useTranslation();
 
 The main editor uses tiptap (ProseMirror-based) for rich text editing and has two split panes, the left for source text and the right for translation. These can be scrolled independently or linked to scroll by paragraph.
 
+## Known Issues
+
+- **React StrictMode + Floating UI**: StrictMode's double-mounting in development interferes with BlueprintJS Popover positioning (Floating UI). Popovers may appear at (0,0) instead of near their trigger. StrictMode is conditionally disabled in dev hot reload builds to avoid this. If similar positioning issues occur with other components, StrictMode interaction is a likely cause.
+
 ## Guidelines
 
 - Use `bun` instead of npm/yarn
