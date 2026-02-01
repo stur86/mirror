@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "AI-assisted translation editor",
   "main": "electron-dist/main.js",
+  "author": {
+    "name": "Simone Sturniolo",
+    "email": "placeholder@example.com"
+  },
   "type": "module",
   "private": true,
   "scripts": {
@@ -38,13 +42,22 @@
       "electron-dist/**/*"
     ],
     "linux": {
-      "target": ["AppImage", "deb"]
+      "target": [
+        "AppImage",
+        "deb"
+      ]
     },
     "mac": {
-      "target": ["dmg", "zip"]
+      "target": [
+        "dmg",
+        "zip"
+      ]
     },
     "win": {
-      "target": ["nsis", "portable"]
+      "target": [
+        "nsis",
+        "portable"
+      ]
     }
   },
   "dependencies": {

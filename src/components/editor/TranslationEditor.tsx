@@ -1,10 +1,11 @@
 import { useRef, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '../index';
+import { Button, Popover } from '../index';
 import { EditorSettingsProvider, useEditorSettings } from '../../contexts/EditorSettingsContext';
 import { useScrollSync } from '../../hooks/useScrollSync';
 import { EditorPane, type EditorPaneHandle } from './EditorPane';
 import './TranslationEditor.css';
+import { PopperPlacements, Position } from '@blueprintjs/core';
 
 interface TranslationEditorProps {
   sourceContent: string;
