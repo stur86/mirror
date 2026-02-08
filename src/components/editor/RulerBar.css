@@ -29,6 +29,10 @@
   cursor: crosshair;
 }
 
+.ruler-half--pending-target {
+  cursor: pointer;
+}
+
 .ruler-half canvas {
   display: block;
 }
@@ -39,7 +43,6 @@
   --ruler-bg: #111111;
   --ruler-tick-color: rgba(255, 255, 255, 0.5);
   --ruler-tick-major-color: rgba(255, 255, 255, 0.75);
-  --ruler-locking-point-color: #9d7acc;
 }
 
 /* Light theme */
@@ -48,5 +51,4 @@ body:not(.bp6-dark) .ruler-column {
   --ruler-bg: #1a1a1a;
   --ruler-tick-color: rgba(255, 255, 255, 0.4);
   --ruler-tick-major-color: rgba(255, 255, 255, 0.65);
-  --ruler-locking-point-color: #6b4a9e;
 }

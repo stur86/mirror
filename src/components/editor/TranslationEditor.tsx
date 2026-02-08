@@ -1,9 +1,9 @@
-import { useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HTMLSelect } from '../index';
 import { EditorSettingsProvider, useEditorSettings, type LockingPoint } from '../../contexts/EditorSettingsContext';
 import { useScrollSync } from '../../hooks/useScrollSync';
-import { EditorPane, type EditorPaneHandle } from './EditorPane';
+import { EditorPane, type EditorPaneHandle, type MuteRanges } from './EditorPane';
 import { RulerBar } from './RulerBar';
 import { LANGUAGES, type LanguageCode } from '../../constants/languages';
 import './TranslationEditor.css';
@@ -36,7 +36,7 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
   onTranslationLanguageChange,
 }, ref) {
   const { t } = useTranslation();
-  const { lockingPoints, setLockingPoints } = useEditorSettings();
+  const { lockingPoints, setLockingPoints, activeLockIndex, scrollSyncEnabled } = useEditorSettings();
 
   useImperativeHandle(ref, () => ({
     getLockingPoints: () => lockingPoints,
@@ -66,21 +66,60 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
     translationContainerRef.current.current = getTranslationContainer();
   }, [getSourceContainer, getTranslationContainer]);
 
-  const { handleSourceScroll, handleTranslationScroll } = useScrollSync(
+  // useScrollSync now attaches its own listeners — returns void
+  useScrollSync(
     sourceContainerRef.current,
     translationContainerRef.current,
   );
 
-  // Wrap scroll handlers to update refs first
-  const onSourceScroll = useCallback(() => {
-    updateContainerRefs();
-    handleSourceScroll();
-  }, [updateContainerRefs, handleSourceScroll]);
+  // Mute ranges state
+  const [sourceMuteRanges, setSourceMuteRanges] = useState<MuteRanges | null>(null);
+  const [translationMuteRanges, setTranslationMuteRanges] = useState<MuteRanges | null>(null);
 
-  const onTranslationScroll = useCallback(() => {
-    updateContainerRefs();
-    handleTranslationScroll();
-  }, [updateContainerRefs, handleTranslationScroll]);
+  // Compute mute ranges based on active lock point and scroll sync state
+  const computeMuteRanges = useCallback(() => {
+    if (!scrollSyncEnabled) {
+      setSourceMuteRanges(null);
+      setTranslationMuteRanges(null);
+      return;
+    }
+
+    const sourceEl = sourceContainerRef.current.current;
+    const translationEl = translationContainerRef.current.current;
+    if (!sourceEl || !translationEl) return;
+
+    const lp = lockingPoints[activeLockIndex];
+    if (!lp) return;
+
+    const nextLp = lockingPoints[activeLockIndex + 1];
+
+    // Source mute ranges
+    const sourceContentHeight = sourceEl.scrollHeight;
+    const sourceSegStart = lp.sourceY;
+    const sourceSegEnd = nextLp ? nextLp.sourceY : sourceContentHeight;
+
+    setSourceMuteRanges({
+      above: sourceSegStart,
+      below: sourceSegEnd,
+      contentHeight: sourceContentHeight,
+    });
+
+    // Translation mute ranges
+    const translationContentHeight = translationEl.scrollHeight;
+    const translationSegStart = lp.translationY;
+    const translationSegEnd = nextLp ? nextLp.translationY : translationContentHeight;
+
+    setTranslationMuteRanges({
+      above: translationSegStart,
+      below: translationSegEnd,
+      contentHeight: translationContentHeight,
+    });
+  }, [scrollSyncEnabled, lockingPoints, activeLockIndex]);
+
+  // Recompute mute ranges when relevant state changes
+  useEffect(() => {
+    computeMuteRanges();
+  }, [computeMuteRanges]);
 
   const sourceHeaderAction = (
     <HTMLSelect
@@ -110,10 +149,10 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
           side="source"
           content={sourceContent}
           editable={false}
-          onScroll={onSourceScroll}
           onContentChange={updateContainerRefs}
           headerAction={sourceHeaderAction}
           lang={sourceLanguage}
+          muteRanges={sourceMuteRanges}
         />
         <RulerBar
           sourceContainerRef={sourceContainerRef.current}
@@ -125,10 +164,10 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
           content={translationContent}
           editable={true}
           onChange={onTranslationChange}
-          onScroll={onTranslationScroll}
           onContentChange={updateContainerRefs}
           headerAction={translationHeaderAction}
           lang={translationLanguage}
+          muteRanges={translationMuteRanges}
         />
       </div>
     </div>

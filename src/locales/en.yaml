@@ -45,6 +45,8 @@ editor:
   sourcePlaceholder: Source text will appear here...
   translationPlaceholder: Start translating...
   removeLockingPoint: Right-click to remove
+  pendingLockPoint: Click the other ruler to complete
+  abortLockPoint: Right-click to cancel
   loadAsSource: Load as source text
   loadAsTranslation: Load as translation text
   loadTextTitle: Load Text File

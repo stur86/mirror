@@ -4,15 +4,21 @@ import { useEditorSetup } from '../../hooks/useEditorSetup';
 import { useTranslation } from 'react-i18next';
 import './EditorPane.css';
 
+export interface MuteRanges {
+  above: number;       // Y of segment start (top of active segment)
+  below: number;       // Y of segment end (bottom of active segment)
+  contentHeight: number;
+}
+
 export interface EditorPaneProps {
   side: 'source' | 'translation';
   content: string;
   editable?: boolean;
   onChange?: (content: string) => void;
-  onScroll?: () => void;
   onContentChange?: () => void;
   headerAction?: React.ReactNode;
   lang?: string;
+  muteRanges?: MuteRanges | null;
 }
 
 export interface EditorPaneHandle {
@@ -21,7 +27,7 @@ export interface EditorPaneHandle {
 
 export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
   function EditorPane(
-    { side, content, editable = true, onChange, onScroll, onContentChange, headerAction, lang },
+    { side, content, editable = true, onChange, onContentChange, headerAction, lang, muteRanges },
     ref
   ) {
     const { t } = useTranslation();
@@ -75,15 +81,6 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       }
     }, [editor, onContentChange]);
 
-    // Handle scroll events
-    useEffect(() => {
-      const container = containerRef.current;
-      if (!container || !onScroll) return;
-
-      container.addEventListener('scroll', onScroll, { passive: true });
-      return () => container.removeEventListener('scroll', onScroll);
-    }, [onScroll]);
-
     const label = side === 'source' ? t('editor.source') : t('editor.translation');
 
     return (
@@ -94,6 +91,22 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         </div>
         <div ref={containerRef} className="editor-pane__content" lang={lang}>
           <EditorContent editor={editor} />
+          {muteRanges && (
+            <div className="editor-pane__mute-container" style={{ height: muteRanges.contentHeight }}>
+              {muteRanges.above > 0 && (
+                <div
+                  className="editor-pane__mute-overlay"
+                  style={{ top: 0, height: muteRanges.above }}
+                />
+              )}
+              {muteRanges.below < muteRanges.contentHeight && (
+                <div
+                  className="editor-pane__mute-overlay"
+                  style={{ top: muteRanges.below, height: muteRanges.contentHeight - muteRanges.below }}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
     );

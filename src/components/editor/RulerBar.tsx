@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '../index';
 import { useEditorSettings } from '../../contexts/EditorSettingsContext';
 import type { LockingPoint } from '../../contexts/EditorSettingsContext';
+import { getLockPointColor, LOCK_POINT_COLOR_COUNT } from '../../constants/lockPointColors';
 import './RulerBar.css';
 
 interface RulerBarProps {
@@ -19,12 +20,29 @@ const ARROW_HEIGHT = 10;
 const ARROW_BODY_WIDTH = 14;
 const ARROW_TIP_WIDTH = 8;
 
-function drawRuler(
-  canvas: HTMLCanvasElement,
-  contentHeight: number,
-  side: 'source' | 'translation',
-  lockingPoints: LockingPoint[],
-) {
+interface DrawRulerOptions {
+  canvas: HTMLCanvasElement;
+  contentHeight: number;
+  side: 'source' | 'translation';
+  lockingPoints: LockingPoint[];
+  activeLockIndex: number;
+  isDarkTheme: boolean;
+  pendingSide: 'source' | 'translation' | null;
+  pendingY: number | null;
+  nextColorIndex: number;
+}
+
+function drawRuler({
+  canvas,
+  contentHeight,
+  side,
+  lockingPoints,
+  activeLockIndex,
+  isDarkTheme,
+  pendingSide,
+  pendingY,
+  nextColorIndex,
+}: DrawRulerOptions) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
@@ -43,7 +61,6 @@ function drawRuler(
   const bgColor = computedStyle.getPropertyValue('--ruler-bg').trim() || '#111111';
   const tickColor = computedStyle.getPropertyValue('--ruler-tick-color').trim() || 'rgba(255,255,255,0.5)';
   const majorTickColor = computedStyle.getPropertyValue('--ruler-tick-major-color').trim() || 'rgba(255,255,255,0.75)';
-  const lockingColor = computedStyle.getPropertyValue('--ruler-locking-point-color').trim() || '#9d7acc';
 
   // Background
   ctx.fillStyle = bgColor;
@@ -70,14 +87,13 @@ function drawRuler(
     ctx.stroke();
   }
 
-  // Draw arrow-shaped locking point markers
+  // Draw filled arrow-shaped locking point marker
   const drawArrow = (y: number, color: string) => {
     const halfH = ARROW_HEIGHT / 2;
     ctx.fillStyle = color;
     ctx.beginPath();
 
     if (side === 'source') {
-      // Arrow pointing right =>
       const bodyLeft = 0;
       const bodyRight = ARROW_BODY_WIDTH;
       const tipX = bodyRight + ARROW_TIP_WIDTH;
@@ -87,7 +103,6 @@ function drawRuler(
       ctx.lineTo(bodyRight, y + halfH);
       ctx.lineTo(bodyLeft, y + halfH);
     } else {
-      // Arrow pointing left <=
       const bodyRight = width;
       const bodyLeft = width - ARROW_BODY_WIDTH;
       const tipX = bodyLeft - ARROW_TIP_WIDTH;
@@ -102,9 +117,51 @@ function drawRuler(
     ctx.fill();
   };
 
-  for (const lp of lockingPoints) {
+  // Draw dashed-outline arrow for pending marker
+  const drawPendingArrow = (y: number, color: string) => {
+    const halfH = ARROW_HEIGHT / 2;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+
+    if (side === 'source') {
+      const bodyLeft = 0;
+      const bodyRight = ARROW_BODY_WIDTH;
+      const tipX = bodyRight + ARROW_TIP_WIDTH;
+      ctx.moveTo(bodyLeft, y - halfH);
+      ctx.lineTo(bodyRight, y - halfH);
+      ctx.lineTo(tipX, y);
+      ctx.lineTo(bodyRight, y + halfH);
+      ctx.lineTo(bodyLeft, y + halfH);
+    } else {
+      const bodyRight = width;
+      const bodyLeft = width - ARROW_BODY_WIDTH;
+      const tipX = bodyLeft - ARROW_TIP_WIDTH;
+      ctx.moveTo(bodyRight, y - halfH);
+      ctx.lineTo(bodyLeft, y - halfH);
+      ctx.lineTo(tipX, y);
+      ctx.lineTo(bodyLeft, y + halfH);
+      ctx.lineTo(bodyRight, y + halfH);
+    }
+
+    ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+  };
+
+  // Draw lock point markers with per-point colors
+  for (let i = 0; i < lockingPoints.length; i++) {
+    const lp = lockingPoints[i]!;
     const y = side === 'source' ? lp.sourceY : lp.translationY;
-    drawArrow(y, lockingColor);
+    const color = getLockPointColor(lp.colorIndex, i === activeLockIndex, isDarkTheme);
+    drawArrow(y, color);
+  }
+
+  // Draw pending marker on the side that was clicked
+  if (pendingSide === side && pendingY !== null) {
+    const pendingColor = getLockPointColor(nextColorIndex, true, isDarkTheme);
+    drawPendingArrow(pendingY, pendingColor);
   }
 }
 
@@ -114,8 +171,13 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
     scrollSyncEnabled,
     toggleScrollSync,
     lockingPoints,
-    addLockingPoint,
+    activeLockIndex,
+    pendingLockSide,
+    pendingLockY,
     removeLockingPoint,
+    beginLockCreation,
+    completeLockCreation,
+    abortLockCreation,
   } = useEditorSettings();
 
   const sourceRulerRef = useRef<HTMLDivElement>(null);
@@ -123,6 +185,12 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
   const sourceCanvasRef = useRef<HTMLCanvasElement>(null);
   const translationCanvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number | null>(null);
+
+  const isDarkTheme = document.body.classList.contains('bp6-dark');
+
+  // Next color index for the pending marker preview
+  // This should match what addLockingPoint will assign
+  const nextColorIndex = lockingPoints.length % LOCK_POINT_COLOR_COUNT;
 
   // Sync ruler scroll with editor pane scroll
   useEffect(() => {
@@ -158,16 +226,39 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
     const sourceCanvas = sourceCanvasRef.current;
     const translationCanvas = translationCanvasRef.current;
 
+    const dark = document.body.classList.contains('bp6-dark');
+    const colorIdx = lockingPoints.length % LOCK_POINT_COLOR_COUNT;
+
     if (sourceCanvas) {
       const height = sourceContainer ? sourceContainer.scrollHeight : 0;
-      drawRuler(sourceCanvas, height, 'source', lockingPoints);
+      drawRuler({
+        canvas: sourceCanvas,
+        contentHeight: height,
+        side: 'source',
+        lockingPoints,
+        activeLockIndex,
+        isDarkTheme: dark,
+        pendingSide: pendingLockSide,
+        pendingY: pendingLockY,
+        nextColorIndex: colorIdx,
+      });
     }
 
     if (translationCanvas) {
       const height = translationContainer ? translationContainer.scrollHeight : 0;
-      drawRuler(translationCanvas, height, 'translation', lockingPoints);
+      drawRuler({
+        canvas: translationCanvas,
+        contentHeight: height,
+        side: 'translation',
+        lockingPoints,
+        activeLockIndex,
+        isDarkTheme: dark,
+        pendingSide: pendingLockSide,
+        pendingY: pendingLockY,
+        nextColorIndex: colorIdx,
+      });
     }
-  }, [sourceContainerRef, translationContainerRef, lockingPoints]);
+  }, [sourceContainerRef, translationContainerRef, lockingPoints, activeLockIndex, pendingLockSide, pendingLockY]);
 
   useEffect(() => {
     redraw();
@@ -198,36 +289,42 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
     };
   }, [sourceContainerRef, translationContainerRef, redraw]);
 
-  // Click on a ruler: create a lock point pair immediately.
-  // The clicked side's Y = click position in content.
-  // The other side's Y = whatever content position is currently at
-  // the same visual level on the other pane.
+  // Two-step lock creation: click handling
   const handleRulerClick = useCallback(
     (side: 'source' | 'translation', e: React.MouseEvent<HTMLDivElement>) => {
-      const sourceContainer = sourceContainerRef.current;
-      const translationContainer = translationContainerRef.current;
       const rulerDiv = side === 'source' ? sourceRulerRef.current : translationRulerRef.current;
-      if (!sourceContainer || !translationContainer || !rulerDiv) return;
+      if (!rulerDiv) return;
 
       const rect = rulerDiv.getBoundingClientRect();
-      const visualY = e.clientY - rect.top; // visual position from viewport top of ruler
-      const clickContentY = visualY + rulerDiv.scrollTop; // content Y on clicked side
+      const visualY = e.clientY - rect.top;
+      const clickContentY = visualY + rulerDiv.scrollTop;
 
-      // The other side: whatever content is at the same visual Y
-      const otherContainer = side === 'source' ? translationContainer : sourceContainer;
-      const otherContentY = otherContainer.scrollTop + visualY;
-
-      const sourceY = side === 'source' ? clickContentY : otherContentY;
-      const translationY = side === 'translation' ? clickContentY : otherContentY;
-
-      addLockingPoint(sourceY, translationY);
+      if (pendingLockSide === null) {
+        // No pending — start creation on this side
+        beginLockCreation(side, clickContentY);
+      } else if (pendingLockSide === side) {
+        // Same side as pending — reposition the pending marker
+        beginLockCreation(side, clickContentY);
+      } else {
+        // Opposite side — complete the pair
+        completeLockCreation(clickContentY);
+      }
     },
-    [sourceContainerRef, translationContainerRef, addLockingPoint],
+    [pendingLockSide, beginLockCreation, completeLockCreation],
   );
 
-  // Right-click: remove a nearby locking point
+  // Right-click: abort pending or remove nearby lock point
   const handleRulerContextMenu = useCallback(
     (side: 'source' | 'translation', e: React.MouseEvent<HTMLDivElement>) => {
+      e.preventDefault();
+
+      if (pendingLockSide !== null) {
+        // Abort pending creation
+        abortLockCreation();
+        return;
+      }
+
+      // Remove nearby lock point
       const rulerDiv = side === 'source' ? sourceRulerRef.current : translationRulerRef.current;
       if (!rulerDiv) return;
 
@@ -246,12 +343,15 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       );
 
       if (closest.lp && closest.dist <= threshold) {
-        e.preventDefault();
         removeLockingPoint(closest.lp.id);
       }
     },
-    [lockingPoints, removeLockingPoint],
+    [lockingPoints, removeLockingPoint, pendingLockSide, abortLockCreation],
   );
+
+  // Determine cursor classes for pending state
+  const sourceRulerClass = `ruler-half ruler-half--source${pendingLockSide === 'translation' ? ' ruler-half--pending-target' : ''}`;
+  const translationRulerClass = `ruler-half ruler-half--translation${pendingLockSide === 'source' ? ' ruler-half--pending-target' : ''}`;
 
   return (
     <div className="ruler-column">
@@ -267,7 +367,7 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       <div className="ruler-column__body">
         <div
           ref={sourceRulerRef}
-          className="ruler-half ruler-half--source"
+          className={sourceRulerClass}
           onClick={(e) => handleRulerClick('source', e)}
           onContextMenu={(e) => handleRulerContextMenu('source', e)}
         >
@@ -275,7 +375,7 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
         </div>
         <div
           ref={translationRulerRef}
-          className="ruler-half ruler-half--translation"
+          className={translationRulerClass}
           onClick={(e) => handleRulerClick('translation', e)}
           onContextMenu={(e) => handleRulerContextMenu('translation', e)}
         >

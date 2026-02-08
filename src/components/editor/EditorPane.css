@@ -38,6 +38,7 @@
   padding: 1rem;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 /* TipTap Editor Styling */
@@ -136,6 +137,31 @@
   color: var(--placeholder-color);
   pointer-events: none;
   height: 0;
+}
+
+/* Mute overlays for inactive segments */
+.editor-pane__mute-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.editor-pane__mute-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.bp6-dark .editor-pane__mute-overlay {
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+body:not(.bp6-dark) .editor-pane__mute-overlay {
+  background-color: rgba(255, 255, 255, 0.45);
 }
 
 /* Dark theme variables */
