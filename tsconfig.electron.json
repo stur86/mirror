@@ -5,10 +5,10 @@
     "noEmit": false,
     "outDir": "electron-dist",
     "esModuleInterop": true,
-    "module": "esnext",
+    "module": "nodenext",
     "target": "esnext",
     "types": ["node", "electron"],
-    "moduleResolution": "node"
+    "moduleResolution": "nodenext"
   },
   "include": ["electron/**/*"],
   "exclude": ["node_modules/bun-types/*", "src/**/*", "**/*.test.ts"]

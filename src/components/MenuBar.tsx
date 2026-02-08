@@ -93,6 +93,15 @@ export function MenuBar({ onThemeToggle, isDark }: MenuBarProps) {
             onClick={onThemeToggle}
             aria-label={isDark ? t('settings.light') : t('settings.dark')}
           />
+          {isElectron && (
+            <Button
+              variant="minimal"
+              icon="cross"
+              aria-label={t('actions.close')}
+              onClick={() => window.close()}
+              style={{ marginLeft: 8 }}
+            />
+          )}
         </NavbarGroup>
       </Navbar>
       <AboutDialog isOpen={aboutOpen} onClose={() => setAboutOpen(false)} />

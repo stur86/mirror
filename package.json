@@ -48,7 +48,8 @@
         "AppImage",
         "deb"
       ],
-      "icon": "assets/icon256.png"
+      "icon": "assets/icon256.png",
+      "category": "Office"
     },
     "mac": {
       "target": [
