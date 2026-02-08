@@ -22,6 +22,7 @@ interface EditorSettingsContextType extends EditorSettings {
   setScrollSyncEnabled: (enabled: boolean) => void;
   addLockingPoint: (sourceY: number, translationY: number) => void;
   removeLockingPoint: (id: string) => void;
+  setLockingPoints: (points: LockingPoint[]) => void;
 }
 
 const EditorSettingsContext = createContext<EditorSettingsContextType | null>(null);
@@ -59,6 +60,10 @@ export function EditorSettingsProvider({
     });
   }, []);
 
+  const setLockingPointsExplicit = useCallback((points: LockingPoint[]) => {
+    setLockingPoints(points.length > 0 ? points : [DEFAULT_LOCKING_POINT]);
+  }, []);
+
   return (
     <EditorSettingsContext.Provider
       value={{
@@ -68,6 +73,7 @@ export function EditorSettingsProvider({
         setScrollSyncEnabled,
         addLockingPoint,
         removeLockingPoint,
+        setLockingPoints: setLockingPointsExplicit,
       }}
     >
       {children}

@@ -7,12 +7,34 @@ interface LayoutProps {
   children: ReactNode;
   onThemeToggle: () => void;
   isDark: boolean;
+  onNewFile: () => void;
+  onOpenProject: () => void;
+  onLoadText: () => void;
+  onSaveProject: () => void;
+  onExportTranslation: () => void;
 }
 
-export function Layout({ children, onThemeToggle, isDark }: LayoutProps) {
+export function Layout({
+  children,
+  onThemeToggle,
+  isDark,
+  onNewFile,
+  onOpenProject,
+  onLoadText,
+  onSaveProject,
+  onExportTranslation,
+}: LayoutProps) {
   return (
     <div className="layout">
-      <MenuBar onThemeToggle={onThemeToggle} isDark={isDark} />
+      <MenuBar
+        onThemeToggle={onThemeToggle}
+        isDark={isDark}
+        onNewFile={onNewFile}
+        onOpenProject={onOpenProject}
+        onLoadText={onLoadText}
+        onSaveProject={onSaveProject}
+        onExportTranslation={onExportTranslation}
+      />
       <main className="layout-main">
         {children}
       </main>

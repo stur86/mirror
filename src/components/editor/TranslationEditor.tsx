@@ -1,7 +1,7 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HTMLSelect } from '../index';
-import { EditorSettingsProvider } from '../../contexts/EditorSettingsContext';
+import { EditorSettingsProvider, useEditorSettings, type LockingPoint } from '../../contexts/EditorSettingsContext';
 import { useScrollSync } from '../../hooks/useScrollSync';
 import { EditorPane, type EditorPaneHandle } from './EditorPane';
 import { RulerBar } from './RulerBar';
@@ -9,6 +9,11 @@ import { LANGUAGES, type LanguageCode } from '../../constants/languages';
 import './TranslationEditor.css';
 
 const languageOptions = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
+
+export interface TranslationEditorHandle {
+  getLockingPoints: () => LockingPoint[];
+  setLockingPoints: (points: LockingPoint[]) => void;
+}
 
 interface TranslationEditorProps {
   sourceContent: string;
@@ -20,7 +25,8 @@ interface TranslationEditorProps {
   onTranslationLanguageChange: (lang: LanguageCode) => void;
 }
 
-function TranslationEditorInner({
+const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEditorProps>(
+  function TranslationEditorInner({
   sourceContent,
   translationContent,
   onTranslationChange,
@@ -28,8 +34,14 @@ function TranslationEditorInner({
   translationLanguage,
   onSourceLanguageChange,
   onTranslationLanguageChange,
-}: TranslationEditorProps) {
+}, ref) {
   const { t } = useTranslation();
+  const { lockingPoints, setLockingPoints } = useEditorSettings();
+
+  useImperativeHandle(ref, () => ({
+    getLockingPoints: () => lockingPoints,
+    setLockingPoints,
+  }), [lockingPoints, setLockingPoints]);
 
   const sourceRef = useRef<EditorPaneHandle>(null);
   const translationRef = useRef<EditorPaneHandle>(null);
@@ -121,12 +133,14 @@ function TranslationEditorInner({
       </div>
     </div>
   );
-}
+});
 
-export function TranslationEditor(props: TranslationEditorProps) {
-  return (
-    <EditorSettingsProvider>
-      <TranslationEditorInner {...props} />
-    </EditorSettingsProvider>
-  );
-}
+export const TranslationEditor = forwardRef<TranslationEditorHandle, TranslationEditorProps>(
+  function TranslationEditor(props, ref) {
+    return (
+      <EditorSettingsProvider>
+        <TranslationEditorInner ref={ref} {...props} />
+      </EditorSettingsProvider>
+    );
+  }
+);

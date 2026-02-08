@@ -70,6 +70,7 @@
     "@tiptap/extension-placeholder": "^3.18.0",
     "@tiptap/react": "^3.18.0",
     "@tiptap/starter-kit": "^3.18.0",
+    "franc": "^6.2.0",
     "i18next": "^25.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

@@ -17,24 +17,27 @@ import { AboutDialog } from './AboutDialog';
 interface MenuBarProps {
   onThemeToggle: () => void;
   isDark: boolean;
+  onNewFile: () => void;
+  onOpenProject: () => void;
+  onLoadText: () => void;
+  onSaveProject: () => void;
+  onExportTranslation: () => void;
 }
 
 // Check if running in Electron
 const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
 
-export function MenuBar({ onThemeToggle, isDark }: MenuBarProps) {
+export function MenuBar({
+  onThemeToggle,
+  isDark,
+  onNewFile,
+  onOpenProject,
+  onLoadText,
+  onSaveProject,
+  onExportTranslation,
+}: MenuBarProps) {
   const { t } = useTranslation();
   const [aboutOpen, setAboutOpen] = useState(false);
-
-  const handleNewFile = () => {
-    // TODO: Implement new file
-    console.log('New file');
-  };
-
-  const handleLoadFile = () => {
-    // TODO: Implement load file
-    console.log('Load file');
-  };
 
   const handleExit = () => {
     if (isElectron) {
@@ -44,8 +47,13 @@ export function MenuBar({ onThemeToggle, isDark }: MenuBarProps) {
 
   const fileMenu = (
     <Menu>
-      <MenuItem text={t('menu.newFile')} icon="document" onClick={handleNewFile} />
-      <MenuItem text={t('menu.loadFile')} icon="folder-open" onClick={handleLoadFile} />
+      <MenuItem text={t('menu.newFile')} icon="document" onClick={onNewFile} />
+      <MenuDivider />
+      <MenuItem text={t('menu.openProject')} icon="folder-open" onClick={onOpenProject} />
+      <MenuItem text={t('menu.loadText')} icon="document-open" onClick={onLoadText} />
+      <MenuDivider />
+      <MenuItem text={t('menu.saveProject')} icon="floppy-disk" onClick={onSaveProject} />
+      <MenuItem text={t('menu.exportTranslation')} icon="export" onClick={onExportTranslation} />
       {isElectron && (
         <>
           <MenuDivider />

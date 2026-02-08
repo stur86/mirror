@@ -6,7 +6,10 @@ app:
 menu:
   file: File
   newFile: New File
-  loadFile: Load File
+  openProject: Open Project
+  loadText: Load Text File
+  saveProject: Save Project
+  exportTranslation: Export Translation
   exit: Exit
   help: Help
   about: About
@@ -42,3 +45,7 @@ editor:
   sourcePlaceholder: Source text will appear here...
   translationPlaceholder: Start translating...
   removeLockingPoint: Right-click to remove
+  loadAsSource: Load as source text
+  loadAsTranslation: Load as translation text
+  loadTextTitle: Load Text File
+  loadTextPrompt: "Load \"{{fileName}}\" as:"

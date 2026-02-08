@@ -21,6 +21,8 @@ export {
   DialogBody,
   DialogFooter,
   HTMLSelect,
+  Radio,
+  RadioGroup,
 } from '@blueprintjs/core';
 
 // Re-export types

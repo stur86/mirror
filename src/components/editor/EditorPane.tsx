@@ -43,6 +43,13 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       },
     });
 
+    // Sync content prop → editor when it changes externally
+    useEffect(() => {
+      if (editor && content !== editor.getHTML()) {
+        editor.commands.setContent(content, false);
+      }
+    }, [editor, content]);
+
     // Update lang attribute on the contenteditable element when it changes
     useEffect(() => {
       if (editor && lang) {
