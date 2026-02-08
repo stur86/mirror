@@ -1,40 +1,56 @@
 import { useRef, useCallback, useEffect, type RefObject } from 'react';
 import { useEditorSettings } from '../contexts/EditorSettingsContext';
-import {
-  useParagraphPositions,
-  findParagraphAtPosition,
-  type ParagraphPosition,
-} from './useParagraphPositions';
+import type { LockingPoint } from '../contexts/EditorSettingsContext';
 
 interface ScrollSyncResult {
-  sourcePositions: ParagraphPosition[];
-  translationPositions: ParagraphPosition[];
   handleSourceScroll: () => void;
   handleTranslationScroll: () => void;
-  recalculatePositions: () => void;
+}
+
+/**
+ * Find the active locking point for the scrolling pane.
+ *
+ * The active point is the topmost locking point whose Y (on the scrolling
+ * side) is still within the visible viewport.  When no point is visible
+ * (all have scrolled above), use the last one above the viewport – this
+ * keeps a constant offset once you scroll past all anchors.
+ */
+function findActiveLockingPoint(
+  scrollTop: number,
+  viewportHeight: number,
+  side: 'source' | 'translation',
+  points: LockingPoint[],
+): LockingPoint {
+  const key = side === 'source' ? 'sourceY' : 'translationY';
+  const sorted = [...points].sort((a, b) => a[key] - b[key]);
+
+  // Topmost visible: smallest Y that is >= scrollTop and <= scrollTop + viewportHeight
+  const topmostVisible = sorted.find(
+    lp => lp[key] >= scrollTop && lp[key] <= scrollTop + viewportHeight,
+  );
+  if (topmostVisible) return topmostVisible;
+
+  // All above viewport: use the one closest from above (largest Y < scrollTop)
+  const above = sorted.filter(lp => lp[key] < scrollTop);
+  if (above.length > 0) return above[above.length - 1]!;
+
+  // All below viewport (shouldn't happen with the origin default): use the first
+  return sorted[0]!;
 }
 
 export function useScrollSync(
   sourceRef: RefObject<HTMLElement | null>,
   translationRef: RefObject<HTMLElement | null>,
-  sourceDeps: unknown[] = [],
-  translationDeps: unknown[] = []
 ): ScrollSyncResult {
-  const { lockPositionPercent, scrollSyncEnabled } = useEditorSettings();
+  const { scrollSyncEnabled, lockingPoints } = useEditorSettings();
 
-  // Track which pane is currently scrolling to prevent feedback loops
+  // Prevent feedback loops: track which pane is driving the scroll
   const scrollingPaneRef = useRef<'source' | 'translation' | null>(null);
   const scrollTimeoutRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
 
-  const sourcePositions = useParagraphPositions(sourceRef, sourceDeps);
-  const translationPositions = useParagraphPositions(translationRef, translationDeps);
-
-  // Clear scrolling state after a delay
   const clearScrollingState = useCallback(() => {
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     scrollTimeoutRef.current = window.setTimeout(() => {
       scrollingPaneRef.current = null;
     }, 50);
@@ -44,54 +60,32 @@ export function useScrollSync(
     (
       fromContainer: HTMLElement,
       toContainer: HTMLElement,
-      fromPositions: ParagraphPosition[],
-      toPositions: ParagraphPosition[]
+      fromSide: 'source' | 'translation',
     ) => {
-      if (!scrollSyncEnabled) return;
-      if (fromPositions.length === 0 || toPositions.length === 0) return;
+      if (!scrollSyncEnabled || lockingPoints.length === 0) return;
 
-      // Calculate the lock line position within the container
-      const containerHeight = fromContainer.clientHeight;
-      const lockLineY = (lockPositionPercent / 100) * containerHeight;
-
-      // The absolute Y position in the document (accounting for scroll)
-      const absoluteLockY = fromContainer.scrollTop + lockLineY;
-
-      // Find which paragraph is at the lock line
-      const { paragraph, offsetRatio } = findParagraphAtPosition(
-        fromPositions,
-        absoluteLockY
+      const activeLp = findActiveLockingPoint(
+        fromContainer.scrollTop,
+        fromContainer.clientHeight,
+        fromSide,
+        lockingPoints,
       );
 
-      if (!paragraph) return;
+      const fromKey = fromSide === 'source' ? 'sourceY' : 'translationY';
+      const toKey = fromSide === 'source' ? 'translationY' : 'sourceY';
 
-      // Find the corresponding paragraph in the target pane
-      const targetParagraph = toPositions[paragraph.index];
-      if (!targetParagraph) {
-        // If no corresponding paragraph, scroll to end if past the end
-        if (paragraph.index >= toPositions.length) {
-          const lastPara = toPositions[toPositions.length - 1];
-          if (lastPara) {
-            toContainer.scrollTop = lastPara.bottom - lockLineY;
-          }
-        }
-        return;
-      }
+      // Visual Y of the active lock point inside the scrolling pane's viewport
+      const visualY = activeLp[fromKey] - fromContainer.scrollTop;
 
-      // Calculate target scroll position
-      // The target paragraph should be at the same lock line position
-      const targetY = targetParagraph.top + offsetRatio * targetParagraph.height;
-      const targetScrollTop = targetY - lockLineY;
+      // Scroll the other pane so its corresponding point sits at the same visual Y
+      const targetScrollTop = activeLp[toKey] - visualY;
 
-      // Use RAF for smooth scrolling
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         toContainer.scrollTop = Math.max(0, targetScrollTop);
       });
     },
-    [scrollSyncEnabled, lockPositionPercent]
+    [scrollSyncEnabled, lockingPoints],
   );
 
   const handleSourceScroll = useCallback(() => {
@@ -105,21 +99,8 @@ export function useScrollSync(
     const translationContainer = translationRef.current;
     if (!sourceContainer || !translationContainer) return;
 
-    syncScroll(
-      sourceContainer,
-      translationContainer,
-      sourcePositions,
-      translationPositions
-    );
-  }, [
-    scrollSyncEnabled,
-    sourceRef,
-    translationRef,
-    sourcePositions,
-    translationPositions,
-    syncScroll,
-    clearScrollingState,
-  ]);
+    syncScroll(sourceContainer, translationContainer, 'source');
+  }, [scrollSyncEnabled, sourceRef, translationRef, syncScroll, clearScrollingState]);
 
   const handleTranslationScroll = useCallback(() => {
     if (!scrollSyncEnabled) return;
@@ -132,45 +113,16 @@ export function useScrollSync(
     const translationContainer = translationRef.current;
     if (!sourceContainer || !translationContainer) return;
 
-    syncScroll(
-      translationContainer,
-      sourceContainer,
-      translationPositions,
-      sourcePositions
-    );
-  }, [
-    scrollSyncEnabled,
-    sourceRef,
-    translationRef,
-    sourcePositions,
-    translationPositions,
-    syncScroll,
-    clearScrollingState,
-  ]);
-
-  // Recalculate positions (exposed for manual triggering)
-  const recalculatePositions = useCallback(() => {
-    // This will trigger via the dependency arrays in useParagraphPositions
-    // We just need to force a re-render of the positions
-  }, []);
+    syncScroll(translationContainer, sourceContainer, 'translation');
+  }, [scrollSyncEnabled, sourceRef, translationRef, syncScroll, clearScrollingState]);
 
   // Cleanup
   useEffect(() => {
     return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
-  return {
-    sourcePositions,
-    translationPositions,
-    handleSourceScroll,
-    handleTranslationScroll,
-    recalculatePositions,
-  };
+  return { handleSourceScroll, handleTranslationScroll };
 }

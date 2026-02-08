@@ -22,7 +22,22 @@ src/
 │   ├── Layout.css
 │   ├── MenuBar.tsx      # Top menu bar with File/Help menus
 │   ├── Footer.tsx       # Bottom status bar
-│   └── AboutDialog.tsx  # About dialog
+│   ├── AboutDialog.tsx  # About dialog
+│   └── editor/
+│       ├── EditorPane.tsx       # Single editor pane (source or translation)
+│       ├── EditorPane.css
+│       ├── TranslationEditor.tsx # Dual-pane editor with ruler bar
+│       ├── TranslationEditor.css
+│       ├── RulerBar.tsx         # Ruler bar with locking point UI
+│       └── RulerBar.css
+├── constants/
+│   └── languages.ts     # Supported language definitions
+├── contexts/
+│   └── EditorSettingsContext.tsx  # Scroll sync & locking points state
+├── hooks/
+│   ├── useEditorSetup.ts        # Tiptap editor initialization
+│   ├── useScrollSync.ts         # Lock-point-based scroll synchronization
+│   └── useParagraphPositions.ts # Paragraph position utilities
 ├── i18n/
 │   └── index.ts         # i18next configuration
 ├── locales/
@@ -91,7 +106,44 @@ const { t } = useTranslation();
 
 ## Editor Features
 
-The main editor uses tiptap (ProseMirror-based) for rich text editing and has two split panes, the left for source text and the right for translation. These can be scrolled independently or linked to scroll by paragraph.
+The main editor uses tiptap (ProseMirror-based) for rich text editing and has two split panes, the left for source text and the right for translation.
+
+### Ruler Bar & Locking Points
+
+Between the two editor panes sits a **ruler bar** (`RulerBar.tsx` + `RulerBar.css`) — a 48px-wide column with two back-to-back ruler canvases (24px each). Above it is a header with a centered lock/unlink button for toggling scroll sync.
+
+**Visual design:**
+- Black/near-black background (no hue), white tick marks at line-height intervals
+- Source ruler ticks extend from right edge inward; translation ruler ticks from left edge inward
+- Major ticks every 5 lines (longer), minor ticks every line (shorter)
+- Locking point markers are thick 5-sided arrow polygons (`=>` on source, `<=` on translation)
+
+**Locking points** define scroll correspondence between panes. State is managed in `EditorSettingsContext`:
+- `LockingPoint { id, sourceY, translationY }` — a pair of content-Y positions
+- Always at least one lock point; initialized with `(0, 0)` at the origin
+- Deleting the last lock point recreates the default origin point
+
+**Scroll sync algorithm** (`useScrollSync.ts`):
+- The user scrolls freely on whichever pane the mouse hovers
+- The **active lock point** is the topmost one still visible in the scrolling pane's viewport
+- When all lock points are above the viewport, the nearest one above is used (constant offset)
+- The other pane is scrolled so that its corresponding lock point Y sits at the same visual position as the active lock point: `targetScrollTop = activeLp.toY - (activeLp.fromY - scrollTop)`
+- Toggle sync on/off with the lock button in the ruler header
+
+**Creating lock points:**
+- Click on either ruler canvas to create a pair instantly
+- The clicked side's Y = click position in content
+- The other side's Y = whatever content is at the same visual level on the other pane at that moment
+
+**Removing lock points:**
+- Right-click near a lock point marker on either ruler to remove it
+
+**Key files:**
+- `src/contexts/EditorSettingsContext.tsx` — lock point state, scroll sync toggle
+- `src/components/editor/RulerBar.tsx` — ruler bar component with canvas rendering and click handling
+- `src/components/editor/RulerBar.css` — ruler styles and theme variables
+- `src/hooks/useScrollSync.ts` — scroll sync logic using active lock point
+- `src/hooks/useParagraphPositions.ts` — paragraph position utilities (currently unused, retained for future use)
 
 ## Known Issues
 

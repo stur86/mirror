@@ -6,6 +6,7 @@ interface UseEditorSetupOptions {
   content: string;
   editable?: boolean;
   placeholder?: string;
+  lang?: string;
   onUpdate?: (content: string) => void;
 }
 
@@ -13,6 +14,7 @@ export function useEditorSetup({
   content,
   editable = true,
   placeholder = '',
+  lang,
   onUpdate,
 }: UseEditorSetupOptions): Editor | null {
   const editor = useEditor({
@@ -24,6 +26,11 @@ export function useEditorSetup({
     ],
     content,
     editable,
+    editorProps: {
+      attributes: {
+        ...(lang ? { lang } : {}),
+      },
+    },
     onUpdate: ({ editor }) => {
       onUpdate?.(editor.getHTML());
     },

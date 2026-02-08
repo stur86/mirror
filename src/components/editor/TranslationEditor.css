@@ -13,18 +13,3 @@
   overflow: hidden;
 }
 
-.translation-editor__divider {
-  width: 1px;
-  flex-shrink: 0;
-  background: var(--divider-color);
-}
-
-/* Dark theme */
-.bp6-dark .translation-editor {
-  --divider-color: rgba(255, 255, 255, 0.15);
-}
-
-/* Light theme */
-body:not(.bp6-dark) .translation-editor {
-  --divider-color: rgba(0, 0, 0, 0.1);
-}

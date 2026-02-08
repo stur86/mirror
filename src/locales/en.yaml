@@ -35,7 +35,10 @@ about:
 editor:
   source: Source
   translation: Translation
+  sourceLanguage: Source language
+  translationLanguage: Translation language
   scrollSyncOn: Scroll sync enabled - panes scroll together
   scrollSyncOff: Scroll sync disabled - panes scroll independently
   sourcePlaceholder: Source text will appear here...
   translationPlaceholder: Start translating...
+  removeLockingPoint: Right-click to remove

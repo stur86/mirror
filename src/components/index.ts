@@ -20,6 +20,7 @@ export {
   Dialog,
   DialogBody,
   DialogFooter,
+  HTMLSelect,
 } from '@blueprintjs/core';
 
 // Re-export types

@@ -12,6 +12,7 @@ export interface EditorPaneProps {
   onScroll?: () => void;
   onContentChange?: () => void;
   headerAction?: React.ReactNode;
+  lang?: string;
 }
 
 export interface EditorPaneHandle {
@@ -20,7 +21,7 @@ export interface EditorPaneHandle {
 
 export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
   function EditorPane(
-    { side, content, editable = true, onChange, onScroll, onContentChange, headerAction },
+    { side, content, editable = true, onChange, onScroll, onContentChange, headerAction, lang },
     ref
   ) {
     const { t } = useTranslation();
@@ -35,11 +36,21 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       content,
       editable,
       placeholder,
+      lang,
       onUpdate: (newContent) => {
         onChange?.(newContent);
         onContentChange?.();
       },
     });
+
+    // Update lang attribute on the contenteditable element when it changes
+    useEffect(() => {
+      if (editor && lang) {
+        editor.setOptions({
+          editorProps: { attributes: { lang } },
+        });
+      }
+    }, [editor, lang]);
 
     // Expose the container element via ref
     useImperativeHandle(
@@ -74,7 +85,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
           <span className="editor-pane__label">{label}</span>
           {headerAction && <div className="editor-pane__header-action">{headerAction}</div>}
         </div>
-        <div ref={containerRef} className="editor-pane__content">
+        <div ref={containerRef} className="editor-pane__content" lang={lang}>
           <EditorContent editor={editor} />
         </div>
       </div>

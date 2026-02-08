@@ -26,6 +26,9 @@
 
 .editor-pane__header-action {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .editor-pane__content {

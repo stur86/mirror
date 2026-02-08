@@ -1,44 +1,73 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 
+export interface LockingPoint {
+  id: string;
+  sourceY: number;       // px from top of source content
+  translationY: number;  // px from top of translation content
+}
+
+const DEFAULT_LOCKING_POINT: LockingPoint = {
+  id: 'origin',
+  sourceY: 0,
+  translationY: 0,
+};
+
 interface EditorSettings {
-  lockPositionPercent: number;  // 0-100, default 50 (center)
-  scrollSyncEnabled: boolean;   // true = locked, false = independent
+  scrollSyncEnabled: boolean;
+  lockingPoints: LockingPoint[];
 }
 
 interface EditorSettingsContextType extends EditorSettings {
-  setLockPositionPercent: (percent: number) => void;
   toggleScrollSync: () => void;
   setScrollSyncEnabled: (enabled: boolean) => void;
+  addLockingPoint: (sourceY: number, translationY: number) => void;
+  removeLockingPoint: (id: string) => void;
 }
 
 const EditorSettingsContext = createContext<EditorSettingsContextType | null>(null);
 
 interface EditorSettingsProviderProps {
   children: ReactNode;
-  defaultLockPosition?: number;
   defaultScrollSync?: boolean;
 }
 
 export function EditorSettingsProvider({
   children,
-  defaultLockPosition = 50,
   defaultScrollSync = true,
 }: EditorSettingsProviderProps) {
-  const [lockPositionPercent, setLockPositionPercent] = useState(defaultLockPosition);
   const [scrollSyncEnabled, setScrollSyncEnabled] = useState(defaultScrollSync);
+  const [lockingPoints, setLockingPoints] = useState<LockingPoint[]>([DEFAULT_LOCKING_POINT]);
 
   const toggleScrollSync = useCallback(() => {
     setScrollSyncEnabled(prev => !prev);
   }, []);
 
+  const addLockingPoint = useCallback((sourceY: number, translationY: number) => {
+    const newPoint: LockingPoint = {
+      id: crypto.randomUUID(),
+      sourceY,
+      translationY,
+    };
+    setLockingPoints(pts => [...pts, newPoint].sort((a, b) => a.sourceY - b.sourceY));
+  }, []);
+
+  const removeLockingPoint = useCallback((id: string) => {
+    setLockingPoints(pts => {
+      const filtered = pts.filter(p => p.id !== id);
+      // Always keep at least one lock point
+      return filtered.length > 0 ? filtered : [DEFAULT_LOCKING_POINT];
+    });
+  }, []);
+
   return (
     <EditorSettingsContext.Provider
       value={{
-        lockPositionPercent,
         scrollSyncEnabled,
-        setLockPositionPercent,
+        lockingPoints,
         toggleScrollSync,
         setScrollSyncEnabled,
+        addLockingPoint,
+        removeLockingPoint,
       }}
     >
       {children}

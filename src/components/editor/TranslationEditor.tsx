@@ -1,32 +1,38 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Popover } from '../index';
-import { EditorSettingsProvider, useEditorSettings } from '../../contexts/EditorSettingsContext';
+import { HTMLSelect } from '../index';
+import { EditorSettingsProvider } from '../../contexts/EditorSettingsContext';
 import { useScrollSync } from '../../hooks/useScrollSync';
 import { EditorPane, type EditorPaneHandle } from './EditorPane';
+import { RulerBar } from './RulerBar';
+import { LANGUAGES, type LanguageCode } from '../../constants/languages';
 import './TranslationEditor.css';
-import { PopperPlacements, Position } from '@blueprintjs/core';
+
+const languageOptions = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
 
 interface TranslationEditorProps {
   sourceContent: string;
   translationContent: string;
   onTranslationChange: (content: string) => void;
+  sourceLanguage: LanguageCode;
+  translationLanguage: LanguageCode;
+  onSourceLanguageChange: (lang: LanguageCode) => void;
+  onTranslationLanguageChange: (lang: LanguageCode) => void;
 }
 
 function TranslationEditorInner({
   sourceContent,
   translationContent,
   onTranslationChange,
+  sourceLanguage,
+  translationLanguage,
+  onSourceLanguageChange,
+  onTranslationLanguageChange,
 }: TranslationEditorProps) {
   const { t } = useTranslation();
-  const { scrollSyncEnabled, toggleScrollSync } = useEditorSettings();
 
   const sourceRef = useRef<EditorPaneHandle>(null);
   const translationRef = useRef<EditorPaneHandle>(null);
-
-  // Track content for dependency updates
-  const [sourceVersion, setSourceVersion] = useState(0);
-  const [translationVersion, setTranslationVersion] = useState(0);
 
   // Get the actual container elements
   const getSourceContainer = useCallback(
@@ -51,19 +57,7 @@ function TranslationEditorInner({
   const { handleSourceScroll, handleTranslationScroll } = useScrollSync(
     sourceContainerRef.current,
     translationContainerRef.current,
-    [sourceVersion, sourceContent],
-    [translationVersion, translationContent]
   );
-
-  const handleSourceContentChange = useCallback(() => {
-    updateContainerRefs();
-    setSourceVersion((v) => v + 1);
-  }, [updateContainerRefs]);
-
-  const handleTranslationContentChange = useCallback(() => {
-    updateContainerRefs();
-    setTranslationVersion((v) => v + 1);
-  }, [updateContainerRefs]);
 
   // Wrap scroll handlers to update refs first
   const onSourceScroll = useCallback(() => {
@@ -76,13 +70,23 @@ function TranslationEditorInner({
     handleTranslationScroll();
   }, [updateContainerRefs, handleTranslationScroll]);
 
-  const scrollSyncButton = (
-    <Button
+  const sourceHeaderAction = (
+    <HTMLSelect
       minimal
-      small
-      icon={scrollSyncEnabled ? 'link' : 'unlink'}
-      onClick={toggleScrollSync}
-      title={scrollSyncEnabled ? t('editor.scrollSyncOn') : t('editor.scrollSyncOff')}
+      options={languageOptions}
+      value={sourceLanguage}
+      onChange={(e) => onSourceLanguageChange(e.target.value as LanguageCode)}
+      title={t('editor.sourceLanguage')}
+    />
+  );
+
+  const translationHeaderAction = (
+    <HTMLSelect
+      minimal
+      options={languageOptions}
+      value={translationLanguage}
+      onChange={(e) => onTranslationLanguageChange(e.target.value as LanguageCode)}
+      title={t('editor.translationLanguage')}
     />
   );
 
@@ -95,10 +99,14 @@ function TranslationEditorInner({
           content={sourceContent}
           editable={false}
           onScroll={onSourceScroll}
-          onContentChange={handleSourceContentChange}
-          headerAction={scrollSyncButton}
+          onContentChange={updateContainerRefs}
+          headerAction={sourceHeaderAction}
+          lang={sourceLanguage}
         />
-        <div className="translation-editor__divider" />
+        <RulerBar
+          sourceContainerRef={sourceContainerRef.current}
+          translationContainerRef={translationContainerRef.current}
+        />
         <EditorPane
           ref={translationRef}
           side="translation"
@@ -106,7 +114,9 @@ function TranslationEditorInner({
           editable={true}
           onChange={onTranslationChange}
           onScroll={onTranslationScroll}
-          onContentChange={handleTranslationContentChange}
+          onContentChange={updateContainerRefs}
+          headerAction={translationHeaderAction}
+          lang={translationLanguage}
         />
       </div>
     </div>

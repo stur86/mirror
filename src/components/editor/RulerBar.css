@@ -1,0 +1,52 @@
+.ruler-column {
+  width: 48px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ruler-column__header {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--ruler-border-color);
+  flex-shrink: 0;
+}
+
+.ruler-column__body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.ruler-half {
+  width: 24px;
+  overflow: hidden;
+  position: relative;
+  cursor: crosshair;
+}
+
+.ruler-half canvas {
+  display: block;
+}
+
+/* Dark theme */
+.bp6-dark .ruler-column {
+  --ruler-border-color: rgba(255, 255, 255, 0.1);
+  --ruler-bg: #111111;
+  --ruler-tick-color: rgba(255, 255, 255, 0.5);
+  --ruler-tick-major-color: rgba(255, 255, 255, 0.75);
+  --ruler-locking-point-color: #9d7acc;
+}
+
+/* Light theme */
+body:not(.bp6-dark) .ruler-column {
+  --ruler-border-color: rgba(0, 0, 0, 0.1);
+  --ruler-bg: #1a1a1a;
+  --ruler-tick-color: rgba(255, 255, 255, 0.4);
+  --ruler-tick-major-color: rgba(255, 255, 255, 0.65);
+  --ruler-locking-point-color: #6b4a9e;
+}
