@@ -10,7 +10,9 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
-    "noEmit": true,
+    "noEmit": false,
+    "esModuleInterop": true,
+    "outDir": "electron-dist",
 
     "strict": true,
     "skipLibCheck": true,
@@ -22,5 +24,6 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["src/**/*", "electron/**/*"]
+  "include": ["electron/**/*"],
+  "exclude": ["node_modules/bun-types/*", "**/*.test.ts", "src/**/*"]
 }
