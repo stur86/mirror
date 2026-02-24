@@ -29,11 +29,8 @@
   cursor: crosshair;
 }
 
+.ruler-half--hoverable,
 .ruler-half--pending-target {
-  cursor: pointer;
-}
-
-.ruler-half--hoverable {
   cursor: pointer;
 }
 

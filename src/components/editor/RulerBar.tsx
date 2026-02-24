@@ -19,7 +19,8 @@ const CANVAS_WIDTH = 24;
 const ARROW_HEIGHT = 10;
 const ARROW_BODY_WIDTH = 14;
 const ARROW_TIP_WIDTH = 8;
-const GRAB_THRESHOLD = 8; // px — distance within which a click/hover hits a marker
+const GRAB_THRESHOLD = 8;   // px — distance within which a click/hover hits a marker
+const REMOVE_THRESHOLD = 10; // px — right-click removal hit radius (slightly larger than grab)
 
 interface DrawRulerOptions {
   canvas: HTMLCanvasElement;
@@ -229,6 +230,7 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
     originalY: number;
   } | null>(null);
   const [ghostY, setGhostY] = useState<number | null>(null);
+  const ghostYRef = useRef<number | null>(null); // always current — avoids stale closure on drop
   const [hoveredLock, setHoveredLock] = useState<{
     id: string;
     side: 'source' | 'translation';
@@ -361,11 +363,13 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
 
       // Drop: clicking on the dragged side commits the ghost position
       if (dragState?.side === side) {
-        if (ghostY !== null) {
-          updateLockingPoint(dragState.lockId, side, ghostY);
+        if (ghostYRef.current !== null) {
+          updateLockingPoint(dragState.lockId, side, ghostYRef.current);
         }
         setDragState(null);
         setGhostY(null);
+        ghostYRef.current = null;
+        setHoveredLock(null);
         return;
       }
 
@@ -385,10 +389,11 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       }
 
       if (grabTarget && grabDist <= GRAB_THRESHOLD) {
-        // Abort any pending two-step creation
+        // Abort any pending two-step creation (incompatible with drag mode)
         if (pendingLockSide !== null) abortLockCreation();
         setDragState({ lockId: grabTarget.id, side, originalY: grabTarget[fromKey] });
         setGhostY(grabTarget[fromKey]);
+        ghostYRef.current = grabTarget[fromKey];
         return;
       }
 
@@ -402,7 +407,7 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       }
     },
     [
-      dragState, ghostY, lockingPoints, pendingLockSide,
+      dragState, lockingPoints, pendingLockSide,
       updateLockingPoint, abortLockCreation, beginLockCreation, completeLockCreation,
     ],
   );
@@ -418,16 +423,23 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       const rect = rulerDiv.getBoundingClientRect();
       const contentY = e.clientY - rect.top + rulerDiv.scrollTop;
 
-      if (dragState?.side === side) {
-        // Update ghost Y — clamped between adjacent lock points on this side
-        const idx = lockingPoints.findIndex(lp => lp.id === dragState.lockId);
-        if (idx !== -1) {
-          const key = side === 'source' ? 'sourceY' : 'translationY';
-          const prev = lockingPoints[idx - 1];
-          const next = lockingPoints[idx + 1];
-          const minY = prev ? prev[key] + 1 : 0;
-          const maxY = next ? next[key] - 1 : Number.MAX_SAFE_INTEGER;
-          setGhostY(Math.max(minY, Math.min(maxY, contentY)));
+      if (dragState !== null && dragState.side === side) {
+        if (side === 'source') {
+          // Source: clamp between adjacent sourceY values to prevent order inversion
+          const idx = lockingPoints.findIndex(lp => lp.id === dragState.lockId);
+          if (idx !== -1) {
+            const prev = lockingPoints[idx - 1];
+            const next = lockingPoints[idx + 1];
+            const minY = prev ? prev.sourceY + 1 : 0;
+            const maxY = next ? next.sourceY - 1 : Number.MAX_SAFE_INTEGER;
+            const clamped = Math.max(minY, Math.min(maxY, contentY));
+            setGhostY(clamped);
+            ghostYRef.current = clamped;
+          }
+        } else {
+          // Translation: no ordering constraint — move freely
+          setGhostY(contentY);
+          ghostYRef.current = contentY;
         }
         return;
       }
@@ -475,7 +487,6 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       const rect = rulerDiv.getBoundingClientRect();
       const clickY = e.clientY - rect.top + rulerDiv.scrollTop;
 
-      const threshold = 10;
       const closest = lockingPoints.reduce<{ lp: LockingPoint | null; dist: number }>(
         (best, lp) => {
           const y = side === 'source' ? lp.sourceY : lp.translationY;
@@ -483,10 +494,10 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
           if (dist < best.dist) return { lp, dist };
           return best;
         },
-        { lp: null, dist: threshold + 1 },
+        { lp: null, dist: REMOVE_THRESHOLD + 1 },
       );
 
-      if (closest.lp && closest.dist <= threshold) {
+      if (closest.lp && closest.dist <= REMOVE_THRESHOLD) {
         removeLockingPoint(closest.lp.id);
       }
     },
