@@ -30,8 +30,6 @@ interface EditorSettingsContextType extends EditorSettings {
   removeLockingPoint: (id: string) => void;
   setLockingPoints: (points: LockingPoint[]) => void;
   setActiveLockIndex: (index: number) => void;
-  navigateToNextLock: () => void;
-  navigateToPrevLock: () => void;
   beginLockCreation: (side: 'source' | 'translation', y: number) => void;
   completeLockCreation: (y: number) => void;
   abortLockCreation: () => void;
@@ -67,17 +65,6 @@ export function EditorSettingsProvider({
       setActiveLockIndexState(clamped);
       return pts;
     });
-  }, []);
-
-  const navigateToNextLock = useCallback(() => {
-    setLockingPoints(pts => {
-      setActiveLockIndexState(prev => Math.min(prev + 1, pts.length - 1));
-      return pts;
-    });
-  }, []);
-
-  const navigateToPrevLock = useCallback(() => {
-    setActiveLockIndexState(prev => Math.max(prev - 1, 0));
   }, []);
 
   const addLockingPoint = useCallback((sourceY: number, translationY: number) => {
@@ -170,8 +157,6 @@ export function EditorSettingsProvider({
         removeLockingPoint,
         setLockingPoints: setLockingPointsExplicit,
         setActiveLockIndex,
-        navigateToNextLock,
-        navigateToPrevLock,
         beginLockCreation,
         completeLockCreation,
         abortLockCreation,
