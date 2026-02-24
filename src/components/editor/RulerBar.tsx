@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, type RefObject } from 'react';
+import { useRef, useEffect, useCallback, useState, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../index';
 import { useEditorSettings } from '../../contexts/EditorSettingsContext';
@@ -30,6 +30,11 @@ interface DrawRulerOptions {
   pendingSide: 'source' | 'translation' | null;
   pendingY: number | null;
   nextColorIndex: number;
+  // Drag/hover rendering
+  dragState: { lockId: string; side: 'source' | 'translation'; originalY: number } | null;
+  ghostY: number | null;
+  hoveredLockId: string | null;
+  hoveredSide: 'source' | 'translation' | null;
 }
 
 function drawRuler({
@@ -42,6 +47,10 @@ function drawRuler({
   pendingSide,
   pendingY,
   nextColorIndex,
+  dragState,
+  ghostY,
+  hoveredLockId,
+  hoveredSide,
 }: DrawRulerOptions) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -154,8 +163,33 @@ function drawRuler({
   for (let i = 0; i < lockingPoints.length; i++) {
     const lp = lockingPoints[i]!;
     const y = side === 'source' ? lp.sourceY : lp.translationY;
+    const isBeingDragged = dragState?.lockId === lp.id && dragState?.side === side;
+    const isHovered = hoveredLockId === lp.id && hoveredSide === side && !isBeingDragged;
     const color = getLockPointColor(lp.colorIndex, i === activeLockIndex, isDarkTheme);
-    drawArrow(y, color);
+
+    if (isBeingDragged) {
+      // Draw dimmed at original position
+      ctx.globalAlpha = 0.35;
+      drawArrow(y, color);
+      ctx.globalAlpha = 1;
+    } else {
+      drawArrow(y, color);
+      if (isHovered) {
+        // Subtle white overlay to brighten the hovered marker
+        ctx.globalAlpha = 0.25;
+        drawArrow(y, '#ffffff');
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // Draw ghost arrow during drag (same side as grabbed marker only)
+  if (dragState?.side === side && ghostY !== null) {
+    const draggedLp = lockingPoints.find(lp => lp.id === dragState.lockId);
+    if (draggedLp) {
+      const ghostColor = getLockPointColor(draggedLp.colorIndex, true, isDarkTheme);
+      drawArrow(ghostY, ghostColor);
+    }
   }
 
   // Draw pending marker on the side that was clicked
@@ -185,6 +219,18 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
   const sourceCanvasRef = useRef<HTMLCanvasElement>(null);
   const translationCanvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number | null>(null);
+
+  // Drag/hover state (local — not committed to context until drop)
+  const [dragState, setDragState] = useState<{
+    lockId: string;
+    side: 'source' | 'translation';
+    originalY: number;
+  } | null>(null);
+  const [ghostY, setGhostY] = useState<number | null>(null);
+  const [hoveredLock, setHoveredLock] = useState<{
+    id: string;
+    side: 'source' | 'translation';
+  } | null>(null);
 
   const isDarkTheme = document.body.classList.contains('bp6-dark');
 
@@ -241,6 +287,10 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
         pendingSide: pendingLockSide,
         pendingY: pendingLockY,
         nextColorIndex: colorIdx,
+        dragState,
+        ghostY,
+        hoveredLockId: hoveredLock?.id ?? null,
+        hoveredSide: hoveredLock?.side ?? null,
       });
     }
 
@@ -256,9 +306,18 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
         pendingSide: pendingLockSide,
         pendingY: pendingLockY,
         nextColorIndex: colorIdx,
+        dragState,
+        ghostY,
+        hoveredLockId: hoveredLock?.id ?? null,
+        hoveredSide: hoveredLock?.side ?? null,
       });
     }
-  }, [sourceContainerRef, translationContainerRef, lockingPoints, activeLockIndex, pendingLockSide, pendingLockY]);
+  }, [
+    sourceContainerRef, translationContainerRef,
+    lockingPoints, activeLockIndex,
+    pendingLockSide, pendingLockY,
+    dragState, ghostY, hoveredLock,
+  ]);
 
   useEffect(() => {
     redraw();
