@@ -119,7 +119,7 @@ Between the two editor panes sits a **ruler bar** (`RulerBar.tsx` + `RulerBar.cs
 - Locking point markers are thick 5-sided arrow polygons (`=>` on source, `<=` on translation)
 
 **Locking points** define scroll correspondence between panes. State is managed in `EditorSettingsContext`:
-- `LockingPoint { id, sourceY, translationY }` — a pair of content-Y positions
+- `LockingPoint { id, sourceY, translationY, colorIndex }` — a pair of content-Y positions; `colorIndex` (0–7) cycles through the lock point colour palette
 - Always at least one lock point; initialized with `(0, 0)` at the origin
 - Deleting the last lock point recreates the default origin point
 
