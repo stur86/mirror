@@ -1,93 +1,168 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { useEditorSettings } from '../contexts/EditorSettingsContext';
 import type { RefObject } from 'react';
+import type { LockingPoint } from '../contexts/EditorSettingsContext';
 
-/** Focus line at ~33% of viewport height (clamped if not enough content above). */
-const FOCUS_LINE_RATIO = 0.33;
-/** Upper boundary of the focus region (25% of viewport). */
-const FOCUS_REGION_TOP = 0.25;
-/** Lower boundary of the focus region (75% of viewport). */
-const FOCUS_REGION_BOTTOM = 0.75;
+const EASE_DURATION = 120; // ms
+
+/** Smoothstep sigmoid: S-curve on t ∈ [0, 1]. */
+function smoothstep(t: number): number {
+  const c = Math.max(0, Math.min(1, t));
+  return c * c * (3 - 2 * c);
+}
 
 /**
- * Segment-based scroll sync.
+ * Find the active lock point for the scrolling pane.
  *
- * - When sync is enabled, the active lock point is "hooked" at a focus line
- *   (~33% from top) in both panes.
- * - Within a segment the user scrolls freely; both panes sync proportionally.
- * - When the segment boundary crosses the focus region, the next/prev lock
- *   point is activated.
- * - Attaches its own scroll listeners — returns void.
+ * Returns the topmost lock point still visible in the viewport
+ * (smallest fromY that is >= scrollTop and <= scrollTop + viewportH).
+ * If all lock points are above the viewport, returns the nearest one above
+ * (largest fromY that is < scrollTop).
+ * Falls back to the first lock point if the array is non-empty.
+ */
+function findActiveLock(
+  lockingPoints: LockingPoint[],
+  fromKey: 'sourceY' | 'translationY',
+  scrollTop: number,
+  viewportH: number,
+): { lp: LockingPoint; index: number } | null {
+  if (lockingPoints.length === 0) return null;
+
+  // Pass 1: topmost visible (smallest fromY in [scrollTop, scrollTop + viewportH])
+  let bestVisible: LockingPoint | null = null;
+  let bestVisibleIdx = -1;
+  for (let i = 0; i < lockingPoints.length; i++) {
+    const lp = lockingPoints[i]!;
+    const y = lp[fromKey];
+    if (y >= scrollTop && y <= scrollTop + viewportH) {
+      if (bestVisible === null || y < bestVisible[fromKey]) {
+        bestVisible = lp;
+        bestVisibleIdx = i;
+      }
+    }
+  }
+  if (bestVisible !== null) return { lp: bestVisible, index: bestVisibleIdx };
+
+  // Pass 2: nearest above (largest fromY < scrollTop)
+  let bestAbove: LockingPoint | null = null;
+  let bestAboveIdx = -1;
+  for (let i = 0; i < lockingPoints.length; i++) {
+    const lp = lockingPoints[i]!;
+    const y = lp[fromKey];
+    if (y < scrollTop) {
+      if (bestAbove === null || y > bestAbove[fromKey]) {
+        bestAbove = lp;
+        bestAboveIdx = i;
+      }
+    }
+  }
+  if (bestAbove !== null) return { lp: bestAbove, index: bestAboveIdx };
+
+  // Fallback: first lock point
+  return { lp: lockingPoints[0]!, index: 0 };
+}
+
+/**
+ * Constant-offset scroll sync.
+ *
+ * On each scroll event from either pane, finds the topmost visible lock point
+ * and applies: targetScrollTop = lp.toY - (lp.fromY - scrollTop).
+ *
+ * When the active lock changes, a 120ms smoothstep animation bridges the
+ * discontinuity. Any new user scroll cancels the animation immediately.
+ *
+ * Attaches its own scroll listeners — returns void.
  */
 export function useScrollSync(
   sourceRef: RefObject<HTMLElement | null>,
   translationRef: RefObject<HTMLElement | null>,
 ): void {
-  const {
-    scrollSyncEnabled,
-    lockingPoints,
-    activeLockIndex,
-    setActiveLockIndex,
-    navigateToNextLock,
-    navigateToPrevLock,
-  } = useEditorSettings();
+  const { scrollSyncEnabled, lockingPoints, setActiveLockIndex } = useEditorSettings();
 
-  // Prevent feedback loops during programmatic scrolling
-  const isSnapping = useRef(false);
-  const rafRef = useRef<number | null>(null);
-  // Track which pane the user is actively scrolling
+  // Which element are we currently writing to programmatically?
+  // Scroll events on that element are feedback — ignore them.
+  const applyingToRef = useRef<HTMLElement | null>(null);
+
+  // Which pane is the user actively scrolling?
+  // Prevents the synced pane from becoming the "driving" pane.
   const scrollingPaneRef = useRef<'source' | 'translation' | null>(null);
   const scrollTimeoutRef = useRef<number | null>(null);
 
+  // Animation state
+  const rafRef = useRef<number | null>(null);
+  const animRef = useRef<{
+    startTime: number;
+    startValue: number;
+    targetValue: number;
+    element: HTMLElement;
+  } | null>(null);
+
+  // Last active lock index seen (for change detection, not React state)
+  const activeLockIndexRef = useRef<number>(-1);
+
+  /** Cancel any in-flight rAF animation. */
+  const cancelAnimation = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    animRef.current = null;
+  }, []);
+
   /**
-   * Snap both panes so that the active lock point sits at the focus line.
+   * Write a value directly to an element's scrollTop, marking it as
+   * programmatic so its scroll event is ignored.
    */
-  const snapToActiveLock = useCallback(
-    (index?: number) => {
-      const sourceEl = sourceRef.current;
-      const translationEl = translationRef.current;
-      if (!sourceEl || !translationEl) return;
-      if (lockingPoints.length === 0) return;
+  const applyScrollTop = useCallback((el: HTMLElement, value: number) => {
+    applyingToRef.current = el;
+    el.scrollTop = Math.max(0, value);
+    // Clear the guard after one frame (scroll event has fired by then)
+    requestAnimationFrame(() => {
+      if (applyingToRef.current === el) applyingToRef.current = null;
+    });
+  }, []);
 
-      const idx = index ?? activeLockIndex;
-      const lp = lockingPoints[idx];
-      if (!lp) return;
+  /** Start a smoothstep animation from `from` to `to` on `el`. */
+  const startAnimation = useCallback(
+    (el: HTMLElement, from: number, to: number) => {
+      cancelAnimation();
+      animRef.current = {
+        startTime: performance.now(),
+        startValue: from,
+        targetValue: to,
+        element: el,
+      };
 
-      const viewportH = sourceEl.clientHeight;
-      // Focus line position in viewport pixels
-      const focusLine = Math.min(viewportH * FOCUS_LINE_RATIO, lp.sourceY);
-      const focusLineTranslation = Math.min(viewportH * FOCUS_LINE_RATIO, lp.translationY);
+      const tick = () => {
+        const anim = animRef.current;
+        if (!anim) return;
 
-      isSnapping.current = true;
+        const elapsed = performance.now() - anim.startTime;
+        const t = elapsed / EASE_DURATION;
 
-      sourceEl.scrollTop = Math.max(0, lp.sourceY - focusLine);
-      translationEl.scrollTop = Math.max(0, lp.translationY - focusLineTranslation);
+        if (t >= 1) {
+          applyScrollTop(anim.element, anim.targetValue);
+          animRef.current = null;
+          rafRef.current = null;
+          return;
+        }
 
-      // Release snapping flag after a frame so scroll events settle
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          isSnapping.current = false;
-        });
-      });
+        applyScrollTop(
+          anim.element,
+          anim.startValue + smoothstep(t) * (anim.targetValue - anim.startValue),
+        );
+        rafRef.current = requestAnimationFrame(tick);
+      };
+
+      rafRef.current = requestAnimationFrame(tick);
     },
-    [sourceRef, translationRef, lockingPoints, activeLockIndex],
+    [cancelAnimation, applyScrollTop],
   );
 
-  // Snap when activeLockIndex changes
-  useEffect(() => {
-    if (!scrollSyncEnabled) return;
-    snapToActiveLock();
-  }, [activeLockIndex, scrollSyncEnabled, snapToActiveLock]);
-
-  /**
-   * Handle user scroll within the active segment.
-   * Proportionally syncs the other pane and navigates to next/prev lock when
-   * the segment boundary crosses the focus region.
-   */
+  /** Core sync logic called on every user scroll event. */
   const handleScroll = useCallback(
     (fromSide: 'source' | 'translation') => {
       if (!scrollSyncEnabled) return;
-      if (isSnapping.current) return;
 
       const sourceEl = sourceRef.current;
       const translationEl = translationRef.current;
@@ -96,63 +171,32 @@ export function useScrollSync(
 
       const fromEl = fromSide === 'source' ? sourceEl : translationEl;
       const toEl = fromSide === 'source' ? translationEl : sourceEl;
-
-      const lp = lockingPoints[activeLockIndex];
-      if (!lp) return;
-
       const fromKey = fromSide === 'source' ? 'sourceY' : 'translationY';
       const toKey = fromSide === 'source' ? 'translationY' : 'sourceY';
 
+      const scrollTop = fromEl.scrollTop;
       const viewportH = fromEl.clientHeight;
 
-      // Current segment boundaries (from active LP to next LP)
-      const nextLp = lockingPoints[activeLockIndex + 1];
-      const segStartFrom = lp[fromKey];
-      const segEndFrom = nextLp ? nextLp[fromKey] : fromEl.scrollHeight;
+      const result = findActiveLock(lockingPoints, fromKey, scrollTop, viewportH);
+      if (!result) return;
 
-      const segStartTo = lp[toKey];
-      const segEndTo = nextLp ? nextLp[toKey] : toEl.scrollHeight;
+      const { lp, index } = result;
+      const targetScrollTop = lp[toKey] - (lp[fromKey] - scrollTop);
 
-      // Where the active LP currently sits visually
-      const lpVisualY = segStartFrom - fromEl.scrollTop;
+      const lockChanged = index !== activeLockIndexRef.current;
+      activeLockIndexRef.current = index;
 
-      // Check navigation triggers
-      // Scrolling down: segment end crosses the focus region top (25% line)
-      if (nextLp) {
-        const segEndVisualY = segEndFrom - fromEl.scrollTop;
-        if (segEndVisualY < viewportH * FOCUS_REGION_TOP) {
-          navigateToNextLock();
-          return;
-        }
-      }
-
-      // Scrolling up: segment start crosses the focus region bottom (75% line)
-      if (activeLockIndex > 0) {
-        if (lpVisualY > viewportH * FOCUS_REGION_BOTTOM) {
-          navigateToPrevLock();
-          return;
-        }
-      }
-
-      // Proportional sync within the segment
-      const segLengthFrom = segEndFrom - segStartFrom;
-      const segLengthTo = segEndTo - segStartTo;
-
-      if (segLengthFrom > 0) {
-        // How far into the segment are we on the "from" side
-        const progress = (fromEl.scrollTop - (segStartFrom - viewportH * FOCUS_LINE_RATIO)) /
-          (segLengthFrom > viewportH ? segLengthFrom : viewportH);
-        const clampedProgress = Math.max(0, Math.min(1, progress));
-
-        const toStart = segStartTo - viewportH * FOCUS_LINE_RATIO;
-        const toRange = segLengthTo > viewportH ? segLengthTo : viewportH;
-        const targetScrollTop = toStart + clampedProgress * toRange;
-
-        isSnapping.current = true;
-        toEl.scrollTop = Math.max(0, targetScrollTop);
-        requestAnimationFrame(() => {
-          isSnapping.current = false;
-        });
+      if (lockChanged) {
+        // Notify context so RulerBar and mute ranges update
+        setActiveLockIndex(index);
+        // Animate the discontinuity away
+        startAnimation(toEl, toEl.scrollTop, targetScrollTop);
+      } else if (animRef.current !== null) {
+        // User scrolled again before animation finished — cancel and apply directly
+        cancelAnimation();
+        applyScrollTop(toEl, targetScrollTop);
+      } else {
+        applyScrollTop(toEl, targetScrollTop);
       }
     },
     [
@@ -160,13 +204,14 @@ export function useScrollSync(
       sourceRef,
       translationRef,
       lockingPoints,
-      activeLockIndex,
-      navigateToNextLock,
-      navigateToPrevLock,
+      setActiveLockIndex,
+      startAnimation,
+      cancelAnimation,
+      applyScrollTop,
     ],
   );
 
-  // Attach scroll listeners
+  // Attach / detach scroll listeners
   useEffect(() => {
     const sourceEl = sourceRef.current;
     const translationEl = translationRef.current;
@@ -181,19 +226,23 @@ export function useScrollSync(
     };
 
     const onSourceScroll = () => {
+      // Ignore if we programmatically set source scrollTop
+      if (applyingToRef.current === sourceEl) return;
+      // Ignore if user is actively scrolling translation
       if (scrollingPaneRef.current === 'translation') return;
       scrollingPaneRef.current = 'source';
       clearScrollingState();
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => handleScroll('source'));
+      handleScroll('source');
     };
 
     const onTranslationScroll = () => {
+      // Ignore if we programmatically set translation scrollTop
+      if (applyingToRef.current === translationEl) return;
+      // Ignore if user is actively scrolling source
       if (scrollingPaneRef.current === 'source') return;
       scrollingPaneRef.current = 'translation';
       clearScrollingState();
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => handleScroll('translation'));
+      handleScroll('translation');
     };
 
     sourceEl.addEventListener('scroll', onSourceScroll, { passive: true });
@@ -203,15 +252,14 @@ export function useScrollSync(
       sourceEl.removeEventListener('scroll', onSourceScroll);
       translationEl.removeEventListener('scroll', onTranslationScroll);
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [sourceRef, translationRef, scrollSyncEnabled, handleScroll]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      cancelAnimation();
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+  }, [cancelAnimation]);
 }
