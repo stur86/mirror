@@ -33,6 +33,7 @@ interface EditorSettingsContextType extends EditorSettings {
   beginLockCreation: (side: 'source' | 'translation', y: number) => void;
   completeLockCreation: (y: number) => void;
   abortLockCreation: () => void;
+  updateLockingPoint: (id: string, side: 'source' | 'translation', y: number) => void;
 }
 
 const EditorSettingsContext = createContext<EditorSettingsContextType | null>(null);
@@ -143,6 +144,28 @@ export function EditorSettingsProvider({
     setPendingLockY(null);
   }, []);
 
+  const updateLockingPoint = useCallback((id: string, side: 'source' | 'translation', y: number) => {
+    setLockingPoints(pts => {
+      const idx = pts.findIndex(p => p.id === id);
+      if (idx === -1) return pts;
+
+      if (side === 'source') {
+        // Reject if move would invert sort order with neighbours
+        const prev = pts[idx - 1];
+        const next = pts[idx + 1];
+        if (prev && y <= prev.sourceY) return pts;
+        if (next && y >= next.sourceY) return pts;
+      }
+      // translationY has no ordering constraint — always accept
+
+      return pts.map((p, i) =>
+        i === idx
+          ? { ...p, [side === 'source' ? 'sourceY' : 'translationY']: y }
+          : p,
+      );
+    });
+  }, []);
+
   return (
     <EditorSettingsContext.Provider
       value={{
@@ -160,6 +183,7 @@ export function EditorSettingsProvider({
         beginLockCreation,
         completeLockCreation,
         abortLockCreation,
+        updateLockingPoint,
       }}
     >
       {children}
