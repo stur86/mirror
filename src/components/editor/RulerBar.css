@@ -33,6 +33,14 @@
   cursor: pointer;
 }
 
+.ruler-half--hoverable {
+  cursor: pointer;
+}
+
+.ruler-half--dragging {
+  cursor: grabbing;
+}
+
 .ruler-half canvas {
   display: block;
 }

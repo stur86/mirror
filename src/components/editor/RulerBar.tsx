@@ -19,6 +19,7 @@ const CANVAS_WIDTH = 24;
 const ARROW_HEIGHT = 10;
 const ARROW_BODY_WIDTH = 14;
 const ARROW_TIP_WIDTH = 8;
+const GRAB_THRESHOLD = 8; // px — distance within which a click/hover hits a marker
 
 interface DrawRulerOptions {
   canvas: HTMLCanvasElement;
@@ -184,7 +185,7 @@ function drawRuler({
   }
 
   // Draw ghost arrow during drag (same side as grabbed marker only)
-  if (dragState?.side === side && ghostY !== null) {
+  if (dragState !== null && dragState.side === side && ghostY !== null) {
     const draggedLp = lockingPoints.find(lp => lp.id === dragState.lockId);
     if (draggedLp) {
       const ghostColor = getLockPointColor(draggedLp.colorIndex, true, isDarkTheme);
@@ -212,6 +213,7 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
     beginLockCreation,
     completeLockCreation,
     abortLockCreation,
+    updateLockingPoint,
   } = useEditorSettings();
 
   const sourceRulerRef = useRef<HTMLDivElement>(null);
@@ -355,30 +357,113 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       if (!rulerDiv) return;
 
       const rect = rulerDiv.getBoundingClientRect();
-      const visualY = e.clientY - rect.top;
-      const clickContentY = visualY + rulerDiv.scrollTop;
+      const clickContentY = e.clientY - rect.top + rulerDiv.scrollTop;
 
+      // Drop: clicking on the dragged side commits the ghost position
+      if (dragState?.side === side) {
+        if (ghostY !== null) {
+          updateLockingPoint(dragState.lockId, side, ghostY);
+        }
+        setDragState(null);
+        setGhostY(null);
+        return;
+      }
+
+      // Ignore clicks on the opposite side while a drag is active
+      if (dragState) return;
+
+      // Grab: clicking within threshold of an existing marker enters drag mode
+      const fromKey = side === 'source' ? 'sourceY' : 'translationY';
+      let grabTarget: LockingPoint | null = null;
+      let grabDist = GRAB_THRESHOLD + 1;
+      for (const lp of lockingPoints) {
+        const dist = Math.abs(lp[fromKey] - clickContentY);
+        if (dist < grabDist) {
+          grabTarget = lp;
+          grabDist = dist;
+        }
+      }
+
+      if (grabTarget && grabDist <= GRAB_THRESHOLD) {
+        // Abort any pending two-step creation
+        if (pendingLockSide !== null) abortLockCreation();
+        setDragState({ lockId: grabTarget.id, side, originalY: grabTarget[fromKey] });
+        setGhostY(grabTarget[fromKey]);
+        return;
+      }
+
+      // Existing two-step creation logic (no marker nearby)
       if (pendingLockSide === null) {
-        // No pending — start creation on this side
         beginLockCreation(side, clickContentY);
       } else if (pendingLockSide === side) {
-        // Same side as pending — reposition the pending marker
         beginLockCreation(side, clickContentY);
       } else {
-        // Opposite side — complete the pair
         completeLockCreation(clickContentY);
       }
     },
-    [pendingLockSide, beginLockCreation, completeLockCreation],
+    [
+      dragState, ghostY, lockingPoints, pendingLockSide,
+      updateLockingPoint, abortLockCreation, beginLockCreation, completeLockCreation,
+    ],
   );
+
+  const handleRulerMouseMove = useCallback(
+    (side: 'source' | 'translation', e: React.MouseEvent<HTMLDivElement>) => {
+      // Ignore mouse on the opposite side during drag
+      if (dragState && dragState.side !== side) return;
+
+      const rulerDiv = side === 'source' ? sourceRulerRef.current : translationRulerRef.current;
+      if (!rulerDiv) return;
+
+      const rect = rulerDiv.getBoundingClientRect();
+      const contentY = e.clientY - rect.top + rulerDiv.scrollTop;
+
+      if (dragState?.side === side) {
+        // Update ghost Y — clamped between adjacent lock points on this side
+        const idx = lockingPoints.findIndex(lp => lp.id === dragState.lockId);
+        if (idx !== -1) {
+          const key = side === 'source' ? 'sourceY' : 'translationY';
+          const prev = lockingPoints[idx - 1];
+          const next = lockingPoints[idx + 1];
+          const minY = prev ? prev[key] + 1 : 0;
+          const maxY = next ? next[key] - 1 : Number.MAX_SAFE_INTEGER;
+          setGhostY(Math.max(minY, Math.min(maxY, contentY)));
+        }
+        return;
+      }
+
+      // Hover detection
+      let closest: { id: string; dist: number } | null = null;
+      for (const lp of lockingPoints) {
+        const y = side === 'source' ? lp.sourceY : lp.translationY;
+        const dist = Math.abs(y - contentY);
+        if (dist <= GRAB_THRESHOLD && (!closest || dist < closest.dist)) {
+          closest = { id: lp.id, dist };
+        }
+      }
+      setHoveredLock(closest ? { id: closest.id, side } : null);
+    },
+    [dragState, lockingPoints],
+  );
+
+  const handleRulerMouseLeave = useCallback(() => {
+    if (!dragState) setHoveredLock(null);
+  }, [dragState]);
 
   // Right-click: abort pending or remove nearby lock point
   const handleRulerContextMenu = useCallback(
     (side: 'source' | 'translation', e: React.MouseEvent<HTMLDivElement>) => {
       e.preventDefault();
 
+      // Cancel drag if active
+      if (dragState) {
+        setDragState(null);
+        setGhostY(null);
+        return;
+      }
+
+      // Abort pending two-step creation
       if (pendingLockSide !== null) {
-        // Abort pending creation
         abortLockCreation();
         return;
       }
@@ -405,12 +490,24 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
         removeLockingPoint(closest.lp.id);
       }
     },
-    [lockingPoints, removeLockingPoint, pendingLockSide, abortLockCreation],
+    [dragState, lockingPoints, removeLockingPoint, pendingLockSide, abortLockCreation],
   );
 
-  // Determine cursor classes for pending state
-  const sourceRulerClass = `ruler-half ruler-half--source${pendingLockSide === 'translation' ? ' ruler-half--pending-target' : ''}`;
-  const translationRulerClass = `ruler-half ruler-half--translation${pendingLockSide === 'source' ? ' ruler-half--pending-target' : ''}`;
+  const getSourceRulerClass = () => {
+    const base = 'ruler-half ruler-half--source';
+    if (dragState?.side === 'source') return base + ' ruler-half--dragging';
+    if (hoveredLock?.side === 'source') return base + ' ruler-half--hoverable';
+    if (pendingLockSide === 'translation') return base + ' ruler-half--pending-target';
+    return base;
+  };
+
+  const getTranslationRulerClass = () => {
+    const base = 'ruler-half ruler-half--translation';
+    if (dragState?.side === 'translation') return base + ' ruler-half--dragging';
+    if (hoveredLock?.side === 'translation') return base + ' ruler-half--hoverable';
+    if (pendingLockSide === 'source') return base + ' ruler-half--pending-target';
+    return base;
+  };
 
   return (
     <div className="ruler-column">
@@ -426,17 +523,21 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       <div className="ruler-column__body">
         <div
           ref={sourceRulerRef}
-          className={sourceRulerClass}
+          className={getSourceRulerClass()}
           onClick={(e) => handleRulerClick('source', e)}
           onContextMenu={(e) => handleRulerContextMenu('source', e)}
+          onMouseMove={(e) => handleRulerMouseMove('source', e)}
+          onMouseLeave={handleRulerMouseLeave}
         >
           <canvas ref={sourceCanvasRef} />
         </div>
         <div
           ref={translationRulerRef}
-          className={translationRulerClass}
+          className={getTranslationRulerClass()}
           onClick={(e) => handleRulerClick('translation', e)}
           onContextMenu={(e) => handleRulerContextMenu('translation', e)}
+          onMouseMove={(e) => handleRulerMouseMove('translation', e)}
+          onMouseLeave={handleRulerMouseLeave}
         >
           <canvas ref={translationCanvasRef} />
         </div>
