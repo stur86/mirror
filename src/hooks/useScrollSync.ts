@@ -79,6 +79,10 @@ export function useScrollSync(
 ): void {
   const { scrollSyncEnabled, lockingPoints, setActiveLockIndex } = useEditorSettings();
 
+  // Keep a ref to the latest lockingPoints so handleScroll doesn't need it in deps
+  const lockingPointsRef = useRef(lockingPoints);
+  lockingPointsRef.current = lockingPoints;
+
   // Which element are we currently writing to programmatically?
   // Scroll events on that element are feedback — ignore them.
   const applyingToRef = useRef<HTMLElement | null>(null);
@@ -106,7 +110,13 @@ export function useScrollSync(
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-    animRef.current = null;
+    if (animRef.current !== null) {
+      // Release the guard that was held for the animation duration
+      if (applyingToRef.current === animRef.current.element) {
+        applyingToRef.current = null;
+      }
+      animRef.current = null;
+    }
   }, []);
 
   /**
@@ -171,7 +181,8 @@ export function useScrollSync(
       const sourceEl = sourceRef.current;
       const translationEl = translationRef.current;
       if (!sourceEl || !translationEl) return;
-      if (lockingPoints.length === 0) return;
+      const points = lockingPointsRef.current;
+      if (points.length === 0) return;
 
       const fromEl = fromSide === 'source' ? sourceEl : translationEl;
       const toEl = fromSide === 'source' ? translationEl : sourceEl;
@@ -181,7 +192,7 @@ export function useScrollSync(
       const scrollTop = fromEl.scrollTop;
       const viewportH = fromEl.clientHeight;
 
-      const result = findActiveLock(lockingPoints, fromKey, scrollTop, viewportH);
+      const result = findActiveLock(points, fromKey, scrollTop, viewportH);
       if (!result) return;
 
       const { lp, index } = result;
@@ -207,7 +218,6 @@ export function useScrollSync(
       scrollSyncEnabled,
       sourceRef,
       translationRef,
-      lockingPoints,
       setActiveLockIndex,
       startAnimation,
       cancelAnimation,
