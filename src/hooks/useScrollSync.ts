@@ -98,7 +98,7 @@ export function useScrollSync(
   } | null>(null);
 
   // Last active lock index seen (for change detection, not React state)
-  const activeLockIndexRef = useRef<number>(-1);
+  const activeLockIndexRef = useRef<number>(0);
 
   /** Cancel any in-flight rAF animation. */
   const cancelAnimation = useCallback(() => {
@@ -126,6 +126,8 @@ export function useScrollSync(
   const startAnimation = useCallback(
     (el: HTMLElement, from: number, to: number) => {
       cancelAnimation();
+      // Hold the guard for the entire animation duration
+      applyingToRef.current = el;
       animRef.current = {
         startTime: performance.now(),
         startValue: from,
@@ -141,14 +143,16 @@ export function useScrollSync(
         const t = elapsed / EASE_DURATION;
 
         if (t >= 1) {
+          // Final frame — applyScrollTop clears the guard after one frame
           applyScrollTop(anim.element, anim.targetValue);
           animRef.current = null;
           rafRef.current = null;
           return;
         }
 
-        applyScrollTop(
-          anim.element,
+        // Direct write during animation — guard already set from startAnimation call
+        anim.element.scrollTop = Math.max(
+          0,
           anim.startValue + smoothstep(t) * (anim.targetValue - anim.startValue),
         );
         rafRef.current = requestAnimationFrame(tick);
@@ -252,6 +256,7 @@ export function useScrollSync(
       sourceEl.removeEventListener('scroll', onSourceScroll);
       translationEl.removeEventListener('scroll', onTranslationScroll);
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      scrollingPaneRef.current = null;
     };
   }, [sourceRef, translationRef, scrollSyncEnabled, handleScroll]);
 
