@@ -125,9 +125,9 @@ Between the two editor panes sits a **ruler bar** (`RulerBar.tsx` + `RulerBar.cs
 
 **Scroll sync algorithm** (`useScrollSync.ts`):
 - The user scrolls freely on whichever pane the mouse hovers
-- The **active lock point** is the topmost one still visible in the scrolling pane's viewport
-- When all lock points are above the viewport, the nearest one above is used (constant offset)
-- The other pane is scrolled so that its corresponding lock point Y sits at the same visual position as the active lock point: `targetScrollTop = activeLp.toY - (activeLp.fromY - scrollTop)`
+- On each scroll event, the **active lock point** is the topmost lock point still visible in the scrolling pane's viewport (content-Y ≥ scrollTop and ≤ scrollTop + viewportH). If all lock points are above the viewport, the nearest one above is used
+- The other pane is scrolled so its lock coordinate matches: `targetScrollTop = lp.toY - (lp.fromY - scrollTop)`
+- When the active lock changes (different lock becomes topmost), a 120ms smoothstep animation bridges the discontinuity on the synced pane; any new scroll event cancels it immediately
 - Toggle sync on/off with the lock button in the ruler header
 
 **Creating lock points:**
