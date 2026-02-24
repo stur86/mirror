@@ -471,6 +471,7 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       if (dragState) {
         setDragState(null);
         setGhostY(null);
+        ghostYRef.current = null;
         return;
       }
 
