@@ -149,14 +149,23 @@ export function EditorSettingsProvider({
       const idx = pts.findIndex(p => p.id === id);
       if (idx === -1) return pts;
 
-      if (side === 'source') {
-        // Reject if move would invert sort order with neighbours
-        const prev = pts[idx - 1];
-        const next = pts[idx + 1];
-        if (prev && y <= prev.sourceY) return pts;
-        if (next && y >= next.sourceY) return pts;
+      // Reject if move would invert order on the side being edited.
+      // Neighbours are computed in that side's coordinate order.
+      const key = side === 'source' ? 'sourceY' : 'translationY';
+      const sorted = [...pts].sort((a, b) => {
+        const d = a[key] - b[key];
+        if (d !== 0) return d;
+        // Deterministic tie-breaker for rare equal-Y situations
+        return a.id.localeCompare(b.id);
+      });
+
+      const sortedIdx = sorted.findIndex(p => p.id === id);
+      if (sortedIdx !== -1) {
+        const prev = sorted[sortedIdx - 1];
+        const next = sorted[sortedIdx + 1];
+        if (prev && y <= prev[key]) return pts;
+        if (next && y >= next[key]) return pts;
       }
-      // translationY has no ordering constraint — always accept
 
       return pts.map((p, i) =>
         i === idx

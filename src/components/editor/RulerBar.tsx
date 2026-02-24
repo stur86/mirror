@@ -33,10 +33,54 @@ interface DrawRulerOptions {
   pendingY: number | null;
   nextColorIndex: number;
   // Drag/hover rendering
-  dragState: { lockId: string; side: 'source' | 'translation'; originalY: number } | null;
+  dragState: {
+    lockId: string;
+    side: 'source' | 'translation';
+    originalY: number;
+    minY: number;
+    maxY: number;
+  } | null;
   ghostY: number | null;
   hoveredLockId: string | null;
   hoveredSide: 'source' | 'translation' | null;
+}
+
+function computeDragClamp(
+  lockingPoints: LockingPoint[],
+  lockId: string,
+  side: 'source' | 'translation',
+): { minY: number; maxY: number } {
+  const MAX = Number.MAX_SAFE_INTEGER;
+  const idx = lockingPoints.findIndex(lp => lp.id === lockId);
+  if (idx === -1) return { minY: 0, maxY: MAX };
+
+  if (side === 'source') {
+    // lockingPoints is always kept sorted by sourceY
+    const prev = lockingPoints[idx - 1];
+    const next = lockingPoints[idx + 1];
+    const minY = prev ? prev.sourceY + 1 : 0;
+    const maxY = next ? next.sourceY - 1 : MAX;
+    if (minY > maxY) return { minY: lockingPoints[idx]!.sourceY, maxY: lockingPoints[idx]!.sourceY };
+    return { minY, maxY };
+  }
+
+  // Translation side: lockingPoints isn't sorted by translationY, so find the immediate neighbours by a single scan.
+  const currentY = lockingPoints[idx]!.translationY;
+  let prevY: number | null = null;
+  let nextY: number | null = null;
+  for (const lp of lockingPoints) {
+    if (lp.id === lockId) continue;
+    const y = lp.translationY;
+    if (y < currentY) {
+      if (prevY === null || y > prevY) prevY = y;
+    } else if (y > currentY) {
+      if (nextY === null || y < nextY) nextY = y;
+    }
+  }
+  const minY = prevY !== null ? prevY + 1 : 0;
+  const maxY = nextY !== null ? nextY - 1 : MAX;
+  if (minY > maxY) return { minY: currentY, maxY: currentY };
+  return { minY, maxY };
 }
 
 function drawRuler({
@@ -228,6 +272,8 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
     lockId: string;
     side: 'source' | 'translation';
     originalY: number;
+    minY: number;
+    maxY: number;
   } | null>(null);
   const [ghostY, setGhostY] = useState<number | null>(null);
   const ghostYRef = useRef<number | null>(null); // always current — avoids stale closure on drop
@@ -391,7 +437,8 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       if (grabTarget && grabDist <= GRAB_THRESHOLD) {
         // Abort any pending two-step creation (incompatible with drag mode)
         if (pendingLockSide !== null) abortLockCreation();
-        setDragState({ lockId: grabTarget.id, side, originalY: grabTarget[fromKey] });
+        const { minY, maxY } = computeDragClamp(lockingPoints, grabTarget.id, side);
+        setDragState({ lockId: grabTarget.id, side, originalY: grabTarget[fromKey], minY, maxY });
         setGhostY(grabTarget[fromKey]);
         ghostYRef.current = grabTarget[fromKey];
         return;
@@ -424,23 +471,9 @@ export function RulerBar({ sourceContainerRef, translationContainerRef }: RulerB
       const contentY = e.clientY - rect.top + rulerDiv.scrollTop;
 
       if (dragState !== null && dragState.side === side) {
-        if (side === 'source') {
-          // Source: clamp between adjacent sourceY values to prevent order inversion
-          const idx = lockingPoints.findIndex(lp => lp.id === dragState.lockId);
-          if (idx !== -1) {
-            const prev = lockingPoints[idx - 1];
-            const next = lockingPoints[idx + 1];
-            const minY = prev ? prev.sourceY + 1 : 0;
-            const maxY = next ? next.sourceY - 1 : Number.MAX_SAFE_INTEGER;
-            const clamped = Math.max(minY, Math.min(maxY, contentY));
-            setGhostY(clamped);
-            ghostYRef.current = clamped;
-          }
-        } else {
-          // Translation: no ordering constraint — move freely
-          setGhostY(contentY);
-          ghostYRef.current = contentY;
-        }
+        const clamped = Math.max(dragState.minY, Math.min(dragState.maxY, contentY));
+        setGhostY(clamped);
+        ghostYRef.current = clamped;
         return;
       }
 
