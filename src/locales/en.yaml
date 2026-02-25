@@ -52,3 +52,8 @@ editor:
   loadTextTitle: Load Text File
   loadTextPrompt: "Load \"{{fileName}}\" as:"
   editSource: "Edit source"
+  contextMenu:
+    cut: "Cut"
+    copy: "Copy"
+    paste: "Paste"
+    selectAll: "Select All"
