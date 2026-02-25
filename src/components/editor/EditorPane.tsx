@@ -68,7 +68,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     // Sync editable prop → tiptap editor at runtime
     useEffect(() => {
       if (editor) {
-        editor.setEditable(editable ?? true);
+        editor.setEditable(editable);
       }
     }, [editor, editable]);
 
