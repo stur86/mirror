@@ -51,3 +51,4 @@ editor:
   loadAsTranslation: Load as translation text
   loadTextTitle: Load Text File
   loadTextPrompt: "Load \"{{fileName}}\" as:"
+  editSource: "Edit source"

@@ -1,7 +1,9 @@
 import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HTMLSelect } from '../index';
+import { HTMLSelect, Button } from '../index';
 import { EditorSettingsProvider, useEditorSettings, type LockingPoint } from '../../contexts/EditorSettingsContext';
+import { htmlToMarkdown } from '../../utils/markdownConvert';
+import { detectLanguage } from '../../utils/detectLanguage';
 import { useScrollSync } from '../../hooks/useScrollSync';
 import { EditorPane, type EditorPaneHandle, type MuteRanges } from './EditorPane';
 import { RulerBar } from './RulerBar';
@@ -19,6 +21,7 @@ interface TranslationEditorProps {
   sourceContent: string;
   translationContent: string;
   onTranslationChange: (content: string) => void;
+  onSourceChange?: (content: string) => void;
   sourceLanguage: LanguageCode;
   translationLanguage: LanguageCode;
   onSourceLanguageChange: (lang: LanguageCode) => void;
@@ -30,6 +33,7 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
   sourceContent,
   translationContent,
   onTranslationChange,
+  onSourceChange,
   sourceLanguage,
   translationLanguage,
   onSourceLanguageChange,
@@ -42,6 +46,20 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
     getLockingPoints: () => lockingPoints,
     setLockingPoints,
   }), [lockingPoints, setLockingPoints]);
+
+  const [sourceEditMode, setSourceEditMode] = useState(false);
+
+  const toggleSourceEditMode = useCallback(() => {
+    setSourceEditMode(prev => {
+      if (prev) {
+        // Turning off: detect language from current source content
+        const text = htmlToMarkdown(sourceContent);
+        const detected = detectLanguage(text);
+        if (detected) onSourceLanguageChange(detected);
+      }
+      return !prev;
+    });
+  }, [sourceContent, onSourceLanguageChange]);
 
   const sourceRef = useRef<EditorPaneHandle>(null);
   const translationRef = useRef<EditorPaneHandle>(null);
@@ -122,13 +140,23 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
   }, [computeMuteRanges]);
 
   const sourceHeaderAction = (
-    <HTMLSelect
-      minimal
-      options={languageOptions}
-      value={sourceLanguage}
-      onChange={(e) => onSourceLanguageChange(e.target.value as LanguageCode)}
-      title={t('editor.sourceLanguage')}
-    />
+    <>
+      <Button
+        minimal
+        small
+        icon="edit"
+        active={sourceEditMode}
+        onClick={toggleSourceEditMode}
+        title={t('editor.editSource')}
+      />
+      <HTMLSelect
+        minimal
+        options={languageOptions}
+        value={sourceLanguage}
+        onChange={(e) => onSourceLanguageChange(e.target.value as LanguageCode)}
+        title={t('editor.sourceLanguage')}
+      />
+    </>
   );
 
   const translationHeaderAction = (
@@ -148,7 +176,8 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
           ref={sourceRef}
           side="source"
           content={sourceContent}
-          editable={false}
+          editable={sourceEditMode}
+          onChange={onSourceChange}
           onContentChange={updateContainerRefs}
           headerAction={sourceHeaderAction}
           lang={sourceLanguage}
