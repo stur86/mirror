@@ -133,6 +133,7 @@ export function App() {
           ref={editorRef}
           sourceContent={sourceContent}
           translationContent={translationContent}
+          onSourceChange={setSourceContent}
           onTranslationChange={setTranslationContent}
           sourceLanguage={sourceLanguage}
           translationLanguage={translationLanguage}
