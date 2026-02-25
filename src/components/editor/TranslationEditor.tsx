@@ -50,16 +50,14 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
   const [sourceEditMode, setSourceEditMode] = useState(false);
 
   const toggleSourceEditMode = useCallback(() => {
-    setSourceEditMode(prev => {
-      if (prev) {
-        // Turning off: detect language from current source content
-        const text = htmlToMarkdown(sourceContent);
-        const detected = detectLanguage(text);
-        if (detected) onSourceLanguageChange(detected);
-      }
-      return !prev;
-    });
-  }, [sourceContent, onSourceLanguageChange]);
+    if (sourceEditMode) {
+      // Turning off: detect language from current source content
+      const text = htmlToMarkdown(sourceContent);
+      const detected = detectLanguage(text);
+      if (detected) onSourceLanguageChange(detected);
+    }
+    setSourceEditMode(prev => !prev);
+  }, [sourceEditMode, sourceContent, onSourceLanguageChange]);
 
   const sourceRef = useRef<EditorPaneHandle>(null);
   const translationRef = useRef<EditorPaneHandle>(null);
@@ -177,7 +175,7 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
           side="source"
           content={sourceContent}
           editable={sourceEditMode}
-          onChange={onSourceChange}
+          onChange={sourceEditMode ? onSourceChange : undefined}
           onContentChange={updateContainerRefs}
           headerAction={sourceHeaderAction}
           lang={sourceLanguage}
