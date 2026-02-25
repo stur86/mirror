@@ -1,11 +1,11 @@
 import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HTMLSelect, Button } from '../index';
+import { HTMLSelect, Button, Popover, Menu, MenuItem } from '../index';
 import { EditorSettingsProvider, useEditorSettings, type LockingPoint } from '../../contexts/EditorSettingsContext';
 import { htmlToMarkdown } from '../../utils/markdownConvert';
 import { detectLanguage } from '../../utils/detectLanguage';
 import { useScrollSync } from '../../hooks/useScrollSync';
-import { EditorPane, type EditorPaneHandle, type MuteRanges } from './EditorPane';
+import { EditorPane, type EditorPaneHandle, type MuteRanges, type EditorContextMenuEvent } from './EditorPane';
 import { RulerBar } from './RulerBar';
 import { LANGUAGES, type LanguageCode } from '../../constants/languages';
 import './TranslationEditor.css';
@@ -48,6 +48,7 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
   }), [lockingPoints, setLockingPoints]);
 
   const [sourceEditMode, setSourceEditMode] = useState(false);
+  const [contextMenu, setContextMenu] = useState<EditorContextMenuEvent | null>(null);
 
   const toggleSourceEditMode = useCallback(() => {
     if (sourceEditMode) {
@@ -58,6 +59,10 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
     }
     setSourceEditMode(prev => !prev);
   }, [sourceEditMode, sourceContent, onSourceLanguageChange]);
+
+  const handleEditorContextMenu = useCallback((event: EditorContextMenuEvent) => {
+    setContextMenu(event);
+  }, []);
 
   const sourceRef = useRef<EditorPaneHandle>(null);
   const translationRef = useRef<EditorPaneHandle>(null);
@@ -180,6 +185,7 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
           headerAction={sourceHeaderAction}
           lang={sourceLanguage}
           muteRanges={sourceMuteRanges}
+          onEditorContextMenu={handleEditorContextMenu}
         />
         <RulerBar
           sourceContainerRef={sourceContainerRef.current}
@@ -195,8 +201,53 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
           headerAction={translationHeaderAction}
           lang={translationLanguage}
           muteRanges={translationMuteRanges}
+          onEditorContextMenu={handleEditorContextMenu}
         />
       </div>
+      {contextMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            width: 0,
+            height: 0,
+          }}
+        >
+          <Popover
+            isOpen
+            minimal
+            placement="bottom-start"
+            portalContainer={document.body}
+            onInteraction={(nextOpen) => { if (!nextOpen) setContextMenu(null); }}
+            content={
+              <Menu>
+                <MenuItem
+                  text={t('editor.contextMenu.cut')}
+                  disabled={!contextMenu.actions.cut}
+                  onClick={() => { contextMenu.actions.cut?.(); setContextMenu(null); }}
+                />
+                <MenuItem
+                  text={t('editor.contextMenu.copy')}
+                  disabled={!contextMenu.actions.copy}
+                  onClick={() => { contextMenu.actions.copy?.(); setContextMenu(null); }}
+                />
+                <MenuItem
+                  text={t('editor.contextMenu.paste')}
+                  disabled={!contextMenu.actions.paste}
+                  onClick={() => { void contextMenu.actions.paste?.(); setContextMenu(null); }}
+                />
+                <MenuItem
+                  text={t('editor.contextMenu.selectAll')}
+                  onClick={() => { contextMenu.actions.selectAll(); setContextMenu(null); }}
+                />
+              </Menu>
+            }
+          >
+            <span style={{ display: 'block' }} />
+          </Popover>
+        </div>
+      )}
     </div>
   );
 });
