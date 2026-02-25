@@ -180,7 +180,7 @@ body:not(.bp6-dark) .editor-pane {
   --placeholder-color: rgba(0, 0, 0, 0.3);
 }
 
-/* Source pane (read-only) styling */
-.editor-pane--source .editor-pane__content .ProseMirror {
+/* Read-only pane styling */
+.editor-pane--readonly .editor-pane__content .ProseMirror {
   cursor: default;
 }

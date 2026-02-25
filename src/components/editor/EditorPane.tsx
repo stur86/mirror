@@ -65,6 +65,13 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
       }
     }, [editor, lang]);
 
+    // Sync editable prop → tiptap editor at runtime
+    useEffect(() => {
+      if (editor) {
+        editor.setEditable(editable ?? true);
+      }
+    }, [editor, editable]);
+
     // Expose the container element via ref
     useImperativeHandle(
       ref,
@@ -84,7 +91,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
     const label = side === 'source' ? t('editor.source') : t('editor.translation');
 
     return (
-      <div className={`editor-pane editor-pane--${side}`}>
+      <div className={`editor-pane editor-pane--${side}${!editable ? ' editor-pane--readonly' : ''}`}>
         <div className="editor-pane__header">
           <span className="editor-pane__label">{label}</span>
           {headerAction && <div className="editor-pane__header-action">{headerAction}</div>}
