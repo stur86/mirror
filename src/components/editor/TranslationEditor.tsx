@@ -218,7 +218,7 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
             isOpen
             minimal
             placement="bottom-start"
-            portalContainer={document.body}
+            onClose={() => setContextMenu(null)}
             onInteraction={(nextOpen) => { if (!nextOpen) setContextMenu(null); }}
             content={
               <Menu>
@@ -244,7 +244,7 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
               </Menu>
             }
           >
-            <span style={{ display: 'block' }} />
+            <span />
           </Popover>
         </div>
       )}
