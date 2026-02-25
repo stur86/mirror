@@ -41,6 +41,7 @@ const ISO639_3_TO_1: Record<string, LanguageCode> = {
  * is in the app's supported list, or null otherwise.
  */
 export function detectLanguage(text: string): LanguageCode | null {
+  if (!text.trim()) return null;
   const iso3 = franc(text);
   if (iso3 === 'und') return null;
   return ISO639_3_TO_1[iso3] ?? null;
