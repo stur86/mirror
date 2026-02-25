@@ -1,0 +1,4 @@
+* ability to annotate text on either side of the document; put note tags (use Range to detect text position) and open popups to show the note content when the user clicks on the note tag
+* text selection and right click context menu for text (allows for notes and machine translation, see below)
+* Wiktionary API integration to show word definitions and translations when the user clicks on a word in the document. Ability to one-click copy a word's translation to the clipboard
+* Ollama integration, either remote (via API key) or local and support for multiple models, starting from translategemma (for local) to generate snippet translations
