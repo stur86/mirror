@@ -148,6 +148,7 @@ Between the two editor panes sits a **ruler bar** (`RulerBar.tsx` + `RulerBar.cs
 ## Known Issues
 
 - **React StrictMode + Floating UI**: StrictMode's double-mounting in development interferes with BlueprintJS Popover positioning (Floating UI). Popovers may appear at (0,0) instead of near their trigger. StrictMode is conditionally disabled in dev hot reload builds to avoid this. If similar positioning issues occur with other components, StrictMode interaction is a likely cause.
+- **RTF parse failures are silent**: When `handleLoadText` fails to parse an RTF file, it logs to `console.error` and returns silently (no user-facing feedback). A future improvement would show a BlueprintJS `Toaster` notification. This is consistent with how `.mirror.json` project-open errors are currently handled.
 
 ## Guidelines
 
