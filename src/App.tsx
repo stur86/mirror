@@ -4,9 +4,10 @@ import { TranslationEditor } from './components/editor';
 import type { TranslationEditorHandle } from './components/editor';
 import { LoadTextDialog } from './components/LoadTextDialog';
 import type { LanguageCode } from './constants/languages';
-import { readFileAsText, downloadFile } from './utils/fileIO';
+import { readFileAsArrayBuffer, readFileAsText, downloadFile } from './utils/fileIO';
 import { markdownToHtml, htmlToMarkdown } from './utils/markdownConvert';
 import { detectLanguage } from './utils/detectLanguage';
+import { rtfToHtml } from './utils/rtfConvert';
 
 interface MirrorProject {
   version: number;
@@ -28,7 +29,11 @@ export function App() {
 
   // Load text dialog state
   const [loadTextDialogOpen, setLoadTextDialogOpen] = useState(false);
-  const [pendingTextFile, setPendingTextFile] = useState<{ name: string; content: string } | null>(null);
+  const [pendingTextFile, setPendingTextFile] = useState<{
+    name: string;
+    html: string;
+    detected: LanguageCode | null;
+  } | null>(null);
 
   useEffect(() => {
     document.body.classList.toggle('bp6-dark', isDark);
@@ -66,25 +71,39 @@ export function App() {
   }, []);
 
   const handleLoadText = useCallback(async () => {
-    const result = await readFileAsText('.txt,.md,.text,.markdown');
+    const isRtf = (name: string) => name.toLowerCase().endsWith('.rtf');
+    const result = await readFileAsArrayBuffer('.txt,.md,.text,.markdown,.rtf');
     if (!result) return;
 
-    setPendingTextFile(result);
+    let html: string;
+    let detected: LanguageCode | null = null;
+
+    if (isRtf(result.name)) {
+      try {
+        html = await rtfToHtml(result.buffer);
+      } catch (e) {
+        console.error('Failed to parse RTF file:', e);
+        return;
+      }
+    } else {
+      const text = new TextDecoder('utf-8').decode(result.buffer);
+      html = markdownToHtml(text);
+      detected = detectLanguage(text) ?? null;
+    }
+
+    setPendingTextFile({ name: result.name, html, detected });
     setLoadTextDialogOpen(true);
   }, []);
 
   const handleLoadTextConfirm = useCallback((side: 'source' | 'translation') => {
     if (!pendingTextFile) return;
 
-    const html = markdownToHtml(pendingTextFile.content);
-    const detected = detectLanguage(pendingTextFile.content);
-
     if (side === 'source') {
-      setSourceContent(html);
-      if (detected) setSourceLanguage(detected);
+      setSourceContent(pendingTextFile.html);
+      if (pendingTextFile.detected) setSourceLanguage(pendingTextFile.detected);
     } else {
-      setTranslationContent(html);
-      if (detected) setTranslationLanguage(detected);
+      setTranslationContent(pendingTextFile.html);
+      if (pendingTextFile.detected) setTranslationLanguage(pendingTextFile.detected);
     }
 
     setLoadTextDialogOpen(false);
