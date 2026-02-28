@@ -47,6 +47,49 @@ export function readFileAsText(
   });
 }
 
+export function readFileAsArrayBuffer(
+  accept: string,
+): Promise<{ name: string; buffer: ArrayBuffer } | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = accept;
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) {
+        cleanup();
+        resolve(null);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        cleanup();
+        resolve({ name: file.name, buffer: reader.result as ArrayBuffer });
+      };
+      reader.onerror = () => {
+        cleanup();
+        resolve(null);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    input.addEventListener('cancel', () => {
+      cleanup();
+      resolve(null);
+    });
+
+    function cleanup() {
+      document.body.removeChild(input);
+    }
+
+    input.click();
+  });
+}
+
 export function downloadFile(
   filename: string,
   content: string,
