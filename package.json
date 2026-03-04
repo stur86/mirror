@@ -23,6 +23,7 @@
     "@types/bun": "latest",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
+    "@types/turndown": "^5.0.6",
     "@vitejs/plugin-react": "^5.1.2",
     "concurrently": "^9.2.1",
     "electron": "^40.1.0",
@@ -68,15 +69,17 @@
   "dependencies": {
     "@blueprintjs/core": "^6.7.0",
     "@blueprintjs/icons": "^6.5.1",
-    "@iarna/rtf-to-html": "^1.1.0",
     "@tiptap/extension-placeholder": "^3.18.0",
     "@tiptap/react": "^3.18.0",
     "@tiptap/starter-kit": "^3.18.0",
     "franc": "^6.2.0",
     "i18next": "^25.8.0",
+    "mammoth": "^1.11.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-i18next": "^16.5.4",
+    "tiptap-markdown": "^0.9.0",
+    "turndown": "^7.2.2",
     "yaml": "^2.8.2"
   }
 }
