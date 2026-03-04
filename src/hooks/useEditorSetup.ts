@@ -1,6 +1,7 @@
 import { useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import { Markdown } from 'tiptap-markdown';
 
 interface UseEditorSetupOptions {
   content: string;
@@ -23,6 +24,11 @@ export function useEditorSetup({
       Placeholder.configure({
         placeholder,
       }),
+      Markdown.configure({
+        html: false,
+        transformPastedText: true,
+        transformCopiedText: true,
+      }),
     ],
     content,
     editable,
@@ -32,7 +38,7 @@ export function useEditorSetup({
       },
     },
     onUpdate: ({ editor }) => {
-      onUpdate?.(editor.getHTML());
+      onUpdate?.(editor.storage.markdown.getMarkdown());
     },
   });
 
