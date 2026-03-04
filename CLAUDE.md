@@ -35,7 +35,7 @@ src/
 ├── contexts/
 │   └── EditorSettingsContext.tsx  # Scroll sync & locking points state
 ├── hooks/
-│   ├── useEditorSetup.ts        # Tiptap editor initialization
+│   ├── useEditorSetup.ts        # Tiptap editor initialization (includes tiptap-markdown)
 │   ├── useScrollSync.ts         # Lock-point-based scroll synchronization
 │   └── useParagraphPositions.ts # Paragraph position utilities
 ├── i18n/
@@ -44,6 +44,10 @@ src/
 │   └── en.yaml          # English translations (add more locales here)
 ├── types/
 │   └── electron.d.ts    # Electron API type declarations
+├── utils/
+│   ├── docxConvert.ts   # DOCX → Markdown (mammoth + turndown)
+│   ├── fileIO.ts        # File read/download utilities
+│   ├── detectLanguage.ts # Language detection via franc
 ├── App.tsx              # Root app component
 ├── main.tsx             # Entry point
 ├── style.css            # Global styles
@@ -68,6 +72,9 @@ release/                 # Electron-builder output
 - **BlueprintJS 6** - Component library (accessed via abstraction layer)
 - **i18next** - Internationalization with YAML locale files
 - **Sass** - Theming and style overrides
+- **tiptap-markdown** - Markdown as the editor's native exchange format
+- **mammoth** - DOCX → HTML conversion for file import
+- **turndown** - HTML → Markdown (used for DOCX import path and v1 project migration)
 
 ## UI Component Abstraction
 
@@ -148,7 +155,8 @@ Between the two editor panes sits a **ruler bar** (`RulerBar.tsx` + `RulerBar.cs
 ## Known Issues
 
 - **React StrictMode + Floating UI**: StrictMode's double-mounting in development interferes with BlueprintJS Popover positioning (Floating UI). Popovers may appear at (0,0) instead of near their trigger. StrictMode is conditionally disabled in dev hot reload builds to avoid this. If similar positioning issues occur with other components, StrictMode interaction is a likely cause.
-- **RTF parse failures are silent**: When `handleLoadText` fails to parse an RTF file, it logs to `console.error` and returns silently (no user-facing feedback). A future improvement would show a BlueprintJS `Toaster` notification. This is consistent with how `.mirror.json` project-open errors are currently handled.
+- **DOCX parse failures are silent**: When `handleLoadText` fails to parse a DOCX file, it logs to `console.error` and returns silently (no user-facing feedback). A future improvement would show a BlueprintJS `Toaster` notification.
+- **Project file format**: `.mirror.json` uses `version: 2` with Markdown content. Version 1 files (HTML content) are automatically migrated to Markdown on open via turndown.
 
 ## Guidelines
 
