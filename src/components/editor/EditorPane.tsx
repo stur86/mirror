@@ -94,7 +94,7 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
 
     // Sync content prop → editor when it changes externally
     useEffect(() => {
-      if (editor && content !== editor.getHTML()) {
+      if (editor && content !== editor.storage.markdown.getMarkdown()) {
         editor.commands.setContent(content, false);
       }
     }, [editor, content]);
