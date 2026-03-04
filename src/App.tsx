@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import TurndownService from 'turndown';
 import { Layout } from './components/Layout';
 import { TranslationEditor } from './components/editor';
 import type { TranslationEditorHandle } from './components/editor';
 import { LoadTextDialog } from './components/LoadTextDialog';
 import type { LanguageCode } from './constants/languages';
 import { readFileAsArrayBuffer, readFileAsText, downloadFile } from './utils/fileIO';
-import { markdownToHtml, htmlToMarkdown } from './utils/markdownConvert';
 import { detectLanguage } from './utils/detectLanguage';
-import { rtfToHtml } from './utils/rtfConvert';
+import { docxToMarkdown } from './utils/docxConvert';
+
+const turndown = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-' });
 
 interface MirrorProject {
   version: number;
@@ -31,7 +33,7 @@ export function App() {
   const [loadTextDialogOpen, setLoadTextDialogOpen] = useState(false);
   const [pendingTextFile, setPendingTextFile] = useState<{
     name: string;
-    html: string;
+    markdown: string;
     detected: LanguageCode | null;
   } | null>(null);
 
@@ -55,11 +57,16 @@ export function App() {
 
     try {
       const project: MirrorProject = JSON.parse(result.content);
-      if (project.version !== 1) {
+      if (project.version !== 1 && project.version !== 2) {
         console.warn('Unknown project version:', project.version);
       }
-      setSourceContent(project.sourceContent ?? '');
-      setTranslationContent(project.translationContent ?? '');
+
+      // v1 projects stored HTML — convert to Markdown on open
+      const toMarkdown = (content: string) =>
+        project.version === 1 ? turndown.turndown(content ?? '') : (content ?? '');
+
+      setSourceContent(toMarkdown(project.sourceContent));
+      setTranslationContent(toMarkdown(project.translationContent));
       setSourceLanguage((project.sourceLanguage ?? 'en') as LanguageCode);
       setTranslationLanguage((project.translationLanguage ?? 'it') as LanguageCode);
       if (project.lockingPoints?.length) {
@@ -71,27 +78,26 @@ export function App() {
   }, []);
 
   const handleLoadText = useCallback(async () => {
-    const isRtf = (name: string) => name.toLowerCase().endsWith('.rtf');
-    const result = await readFileAsArrayBuffer('.txt,.md,.text,.markdown,.rtf');
+    const isDocx = (name: string) => name.toLowerCase().endsWith('.docx');
+    const result = await readFileAsArrayBuffer('.txt,.md,.text,.markdown,.docx');
     if (!result) return;
 
-    let html: string;
+    let markdown: string;
     let detected: LanguageCode | null = null;
 
-    if (isRtf(result.name)) {
+    if (isDocx(result.name)) {
       try {
-        html = await rtfToHtml(result.buffer);
+        markdown = await docxToMarkdown(result.buffer);
       } catch (e) {
-        console.error('Failed to parse RTF file:', e);
+        console.error('Failed to parse DOCX file:', e);
         return;
       }
     } else {
-      const text = new TextDecoder('utf-8').decode(result.buffer);
-      html = markdownToHtml(text);
-      detected = detectLanguage(text) ?? null;
+      markdown = new TextDecoder('utf-8').decode(result.buffer);
     }
 
-    setPendingTextFile({ name: result.name, html, detected });
+    detected = detectLanguage(markdown) ?? null;
+    setPendingTextFile({ name: result.name, markdown, detected });
     setLoadTextDialogOpen(true);
   }, []);
 
@@ -99,10 +105,10 @@ export function App() {
     if (!pendingTextFile) return;
 
     if (side === 'source') {
-      setSourceContent(pendingTextFile.html);
+      setSourceContent(pendingTextFile.markdown);
       if (pendingTextFile.detected) setSourceLanguage(pendingTextFile.detected);
     } else {
-      setTranslationContent(pendingTextFile.html);
+      setTranslationContent(pendingTextFile.markdown);
       if (pendingTextFile.detected) setTranslationLanguage(pendingTextFile.detected);
     }
 
@@ -121,7 +127,7 @@ export function App() {
     ];
 
     const project: MirrorProject = {
-      version: 1,
+      version: 2,
       sourceContent,
       translationContent,
       sourceLanguage,
@@ -133,8 +139,8 @@ export function App() {
   }, [sourceContent, translationContent, sourceLanguage, translationLanguage]);
 
   const handleExportTranslation = useCallback(() => {
-    const md = htmlToMarkdown(translationContent);
-    downloadFile('translation.md', md, 'text/markdown');
+    // translationContent is already Markdown — export directly
+    downloadFile('translation.md', translationContent, 'text/markdown');
   }, [translationContent]);
 
   return (
