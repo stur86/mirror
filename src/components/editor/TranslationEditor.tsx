@@ -2,7 +2,6 @@ import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHand
 import { useTranslation } from 'react-i18next';
 import { HTMLSelect, Button, Popover, Menu, MenuItem } from '../index';
 import { EditorSettingsProvider, useEditorSettings, type LockingPoint } from '../../contexts/EditorSettingsContext';
-import { htmlToMarkdown } from '../../utils/markdownConvert';
 import { detectLanguage } from '../../utils/detectLanguage';
 import { useScrollSync } from '../../hooks/useScrollSync';
 import { EditorPane, type EditorPaneHandle, type MuteRanges, type EditorContextMenuEvent } from './EditorPane';
@@ -53,8 +52,7 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
   const toggleSourceEditMode = useCallback(() => {
     if (sourceEditMode) {
       // Turning off: detect language from current source content
-      const text = htmlToMarkdown(sourceContent);
-      const detected = detectLanguage(text);
+      const detected = detectLanguage(sourceContent);
       if (detected) onSourceLanguageChange(detected);
     }
     setSourceEditMode(prev => !prev);
