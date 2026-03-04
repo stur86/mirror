@@ -8,6 +8,14 @@ const turndown = new TurndownService({
 });
 
 export async function docxToMarkdown(buffer: ArrayBuffer): Promise<string> {
-  const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
+  const result = await mammoth.convertToHtml(
+    { arrayBuffer: buffer },
+    {
+      styleMap: [
+        "p[style-name='Title'] => h1:fresh",
+        "p[style-name='Subtitle'] => h2:fresh",
+      ],
+    },
+  );
   return turndown.turndown(result.value);
 }
