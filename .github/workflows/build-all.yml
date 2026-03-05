@@ -28,20 +28,20 @@ jobs:
       - name: Compile Electron TypeScript
         run: bun run electron:compile
 
-      - name: Build platform-specific packages
+      - name: Package (Linux)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: bun run package:linux
+
+      - name: Package (macOS)
+        if: ${{ matrix.os == 'macos-latest' }}
         env:
           # Disable mac automatic identity discovery to avoid signing attempts
-          CSC_IDENTITY_AUTO_DISCOVERY: ${{ matrix.os == 'macos-latest' && 'false' || '' }}
-        run: |
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            bun run package:linux
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            # produce unsigned .app (dir mode)
-            bun run package:mac
-          else
-            # windows-latest runner
-            bun run package:win
-          fi
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: bun run package:mac
+
+      - name: Package (Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: bun run package:win
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
