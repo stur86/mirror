@@ -1,0 +1,50 @@
+name: Build Electron releases (Linux / macOS / Windows)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web
+        run: npm run build
+
+      - name: Compile Electron TypeScript
+        run: npm run electron:compile
+
+      - name: Build platform-specific packages
+        env:
+          # Disable mac automatic identity discovery to avoid signing attempts
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ matrix.os == 'macos-latest' && 'false' || '' }}
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            npx electron-builder --linux --x64 --publish never
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            # produce unsigned .app (dir mode)
+            npx electron-builder --mac --x64 --dir --publish never
+          else
+            # windows-latest runner
+            npx electron-builder --win --x64 --publish never
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-release
+          path: release/
