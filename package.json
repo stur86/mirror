@@ -16,6 +16,9 @@
     "electron:compile": "npx tsc -p tsconfig.electron.json",
     "electron:dev": "bun run electron:compile && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "bun run build && bun run electron:compile && electron-builder",
+    "package:linux": "electron-builder --linux --x64 --publish never",
+    "package:mac": "electron-builder --mac --x64 --dir --publish never",
+    "package:win": "electron-builder --win --x64 --publish never",
     "typecheck": "tsc --noEmit",
     "generate-icons": "bun run scripts/generate_icons.ts"
   },

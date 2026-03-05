@@ -14,19 +14,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - name: Use Bun (runtime)
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
+          bun-version: 'latest'
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Build web
-        run: npm run build
+        run: bun run build
 
       - name: Compile Electron TypeScript
-        run: npm run electron:compile
+        run: bun run electron:compile
 
       - name: Build platform-specific packages
         env:
@@ -34,13 +34,13 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ matrix.os == 'macos-latest' && 'false' || '' }}
         run: |
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            npx electron-builder --linux --x64 --publish never
+            bun run package:linux
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             # produce unsigned .app (dir mode)
-            npx electron-builder --mac --x64 --dir --publish never
+            bun run package:mac
           else
             # windows-latest runner
-            npx electron-builder --win --x64 --publish never
+            bun run package:win
           fi
 
       - name: Upload build artifacts
