@@ -8,6 +8,7 @@ import type { LanguageCode } from './constants/languages';
 import { readFileAsArrayBuffer, readFileAsText, downloadFile } from './utils/fileIO';
 import { detectLanguage } from './utils/detectLanguage';
 import { docxToMarkdown } from './utils/docxConvert';
+import { useShortcut, shortcutChord } from './contexts/KeyboardShortcutsContext';
 
 const turndown = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-' });
 
@@ -142,6 +143,12 @@ export function App() {
     // translationContent is already Markdown — export directly
     downloadFile('translation.md', translationContent, 'text/markdown');
   }, [translationContent]);
+
+  useShortcut(shortcutChord('s'), handleSaveProject);
+  useShortcut(shortcutChord('s', true), () => {}); // placeholder — handleSaveProjectAs comes in Task 8
+  useShortcut(shortcutChord('o'), handleOpenProject);
+  useShortcut(shortcutChord('n'), handleNewFile);
+  useShortcut(shortcutChord('e'), handleExportTranslation);
 
   return (
     <>
