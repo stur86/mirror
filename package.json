@@ -20,7 +20,8 @@
     "package:mac": "electron-builder --mac --x64 --dir --publish never",
     "package:win": "electron-builder --win --x64 --publish never",
     "typecheck": "tsc --noEmit",
-    "generate-icons": "bun run scripts/generate_icons.ts"
+    "generate-icons": "bun run scripts/generate_icons.ts",
+    "test": "bun test"
   },
   "devDependencies": {
     "@types/bun": "latest",
