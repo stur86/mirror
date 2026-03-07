@@ -20,7 +20,7 @@ function smoothstep(t: number): number {
  * (largest fromY that is < scrollTop).
  * Falls back to the first lock point if the array is non-empty.
  */
-function findActiveLock(
+export function findActiveLock(
   lockingPoints: LockingPoint[],
   fromKey: 'sourceY' | 'translationY',
   scrollTop: number,
@@ -60,6 +60,16 @@ function findActiveLock(
 
   // Fallback: first lock point
   return { lp: lockingPoints[0]!, index: 0 };
+}
+
+/** Pure formula: given the active lock and the current scrollTop on the from-side,
+ *  compute what scrollTop the to-side should be set to. */
+export function computeTargetScrollTop(
+  fromY: number,
+  toY: number,
+  scrollTop: number,
+): number {
+  return toY - (fromY - scrollTop);
 }
 
 /**
