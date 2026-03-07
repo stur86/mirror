@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
 import { LOCK_POINT_COLOR_COUNT } from '../constants/lockPointColors';
+import { wouldInvertOrder } from '../utils/lockPointOrder';
 
 export interface LockingPoint {
   id: string;
@@ -148,25 +149,7 @@ export function EditorSettingsProvider({
     setLockingPoints(pts => {
       const idx = pts.findIndex(p => p.id === id);
       if (idx === -1) return pts;
-
-      // Reject if move would invert order on the side being edited.
-      // Neighbours are computed in that side's coordinate order.
-      const key = side === 'source' ? 'sourceY' : 'translationY';
-      const sorted = [...pts].sort((a, b) => {
-        const d = a[key] - b[key];
-        if (d !== 0) return d;
-        // Deterministic tie-breaker for rare equal-Y situations
-        return a.id.localeCompare(b.id);
-      });
-
-      const sortedIdx = sorted.findIndex(p => p.id === id);
-      if (sortedIdx !== -1) {
-        const prev = sorted[sortedIdx - 1];
-        const next = sorted[sortedIdx + 1];
-        if (prev && y <= prev[key]) return pts;
-        if (next && y >= next[key]) return pts;
-      }
-
+      if (wouldInvertOrder(pts, id, side, y)) return pts;
       return pts.map((p, i) =>
         i === idx
           ? { ...p, [side === 'source' ? 'sourceY' : 'translationY']: y }
