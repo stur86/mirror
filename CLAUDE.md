@@ -17,7 +17,7 @@ bun run test          # Run unit tests (Bun test runner)
 This app is deployed to real users. After any significant change set, bump the version:
 
 ```sh
-bun version prerelease --preid=alpha   # e.g. 0.1.0 → 0.1.1-alpha.0, or 0.1.1-alpha.0 → 0.1.1-alpha.1
+bun pm version prerelease --preid=alpha   # e.g. 0.1.0 → 0.1.1-alpha.0, or 0.1.1-alpha.0 → 0.1.1-alpha.1
 ```
 
 We stay on prerelease (`-alpha.N`) until we decide to cut a stable release. Commit the version bump separately after the feature commits.
