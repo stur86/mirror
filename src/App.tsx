@@ -5,7 +5,7 @@ import { TranslationEditor } from './components/editor';
 import type { TranslationEditorHandle } from './components/editor';
 import { LoadTextDialog } from './components/LoadTextDialog';
 import type { LanguageCode } from './constants/languages';
-import { readFileAsArrayBuffer, readFileAsText, downloadFile } from './utils/fileIO';
+import { readFileAsArrayBuffer, saveFileWithPicker, saveFileToHandle, openFileWithPicker } from './utils/fileIO';
 import { detectLanguage } from './utils/detectLanguage';
 import { docxToMarkdown } from './utils/docxConvert';
 import { useShortcut, shortcutChord } from './contexts/KeyboardShortcutsContext';
@@ -29,6 +29,7 @@ export function App() {
   const [translationLanguage, setTranslationLanguage] = useState<LanguageCode>('it');
 
   const editorRef = useRef<TranslationEditorHandle>(null);
+  const projectFileHandleRef = useRef<FileSystemFileHandle | null>(null);
 
   // Load text dialog state
   const [loadTextDialogOpen, setLoadTextDialogOpen] = useState(false);
@@ -53,8 +54,10 @@ export function App() {
   }, []);
 
   const handleOpenProject = useCallback(async () => {
-    const result = await readFileAsText('.mirror.json');
+    const result = await openFileWithPicker();
     if (!result) return;
+
+    projectFileHandleRef.current = result.handle;
 
     try {
       const project: MirrorProject = JSON.parse(result.content);
@@ -62,7 +65,6 @@ export function App() {
         console.warn('Unknown project version:', project.version);
       }
 
-      // v1 projects stored HTML — convert to Markdown on open
       const toMarkdown = (content: string) =>
         project.version === 1 ? turndown.turndown(content ?? '') : (content ?? '');
 
@@ -122,11 +124,10 @@ export function App() {
     setPendingTextFile(null);
   }, []);
 
-  const handleSaveProject = useCallback(() => {
+  const buildProjectJson = useCallback(() => {
     const lockingPoints = editorRef.current?.getLockingPoints() ?? [
       { id: 'origin', sourceY: 0, translationY: 0 },
     ];
-
     const project: MirrorProject = {
       version: 2,
       sourceContent,
@@ -135,17 +136,31 @@ export function App() {
       translationLanguage,
       lockingPoints,
     };
-
-    downloadFile('project.mirror.json', JSON.stringify(project, null, 2), 'application/json');
+    return JSON.stringify(project, null, 2);
   }, [sourceContent, translationContent, sourceLanguage, translationLanguage]);
+
+  const handleSaveProjectAs = useCallback(async () => {
+    const json = buildProjectJson();
+    const handle = await saveFileWithPicker('project.mirror.json', json, 'application/json');
+    if (handle) projectFileHandleRef.current = handle;
+  }, [buildProjectJson]);
+
+  const handleSaveProject = useCallback(async () => {
+    const handle = projectFileHandleRef.current;
+    if (handle) {
+      await saveFileToHandle(handle, buildProjectJson());
+    } else {
+      await handleSaveProjectAs();
+    }
+  }, [buildProjectJson, handleSaveProjectAs]);
 
   const handleExportTranslation = useCallback(() => {
     // translationContent is already Markdown — export directly
-    downloadFile('translation.md', translationContent, 'text/markdown');
+    saveFileWithPicker('translation.md', translationContent, 'text/markdown');
   }, [translationContent]);
 
   useShortcut(shortcutChord('s'), handleSaveProject);
-  useShortcut(shortcutChord('s', true), () => {}); // placeholder — handleSaveProjectAs comes in Task 8
+  useShortcut(shortcutChord('s', true), handleSaveProjectAs);
   useShortcut(shortcutChord('o'), handleOpenProject);
   useShortcut(shortcutChord('n'), handleNewFile);
   useShortcut(shortcutChord('e'), handleExportTranslation);
@@ -159,7 +174,7 @@ export function App() {
         onOpenProject={handleOpenProject}
         onLoadText={handleLoadText}
         onSaveProject={handleSaveProject}
-        onSaveProjectAs={() => {}}
+        onSaveProjectAs={handleSaveProjectAs}
         onExportTranslation={handleExportTranslation}
       >
         <TranslationEditor
