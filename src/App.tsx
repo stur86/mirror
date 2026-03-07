@@ -5,7 +5,7 @@ import { TranslationEditor } from './components/editor';
 import type { TranslationEditorHandle } from './components/editor';
 import { LoadTextDialog } from './components/LoadTextDialog';
 import type { LanguageCode } from './constants/languages';
-import { readFileAsArrayBuffer, saveFileWithPicker, saveFileToHandle, openFileWithPicker } from './utils/fileIO';
+import { readFileAsArrayBuffer, saveFileWithPicker, saveFileToHandle, openFileWithPicker, downloadFile } from './utils/fileIO';
 import { detectLanguage } from './utils/detectLanguage';
 import { docxToMarkdown } from './utils/docxConvert';
 import { useShortcut, shortcutChord } from './contexts/KeyboardShortcutsContext';
@@ -155,8 +155,7 @@ export function App() {
   }, [buildProjectJson, handleSaveProjectAs]);
 
   const handleExportTranslation = useCallback(() => {
-    // translationContent is already Markdown — export directly
-    saveFileWithPicker('translation.md', translationContent, 'text/markdown');
+    downloadFile('translation.md', translationContent, 'text/markdown');
   }, [translationContent]);
 
   useShortcut(shortcutChord('s'), handleSaveProject);
