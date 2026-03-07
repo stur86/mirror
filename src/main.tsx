@@ -4,12 +4,13 @@ import { App } from './App';
 import './i18n';
 import './components/styles';
 import './style.css';
+import { KeyboardShortcutsProvider } from './contexts/KeyboardShortcutsContext';
 
 // This avoids some issues with popovers in development mode
 const Root = (
   import.meta.env.DEV
-    ? <App />
-    : <StrictMode><App /></StrictMode>
+    ? <KeyboardShortcutsProvider><App /></KeyboardShortcutsProvider>
+    : <StrictMode><KeyboardShortcutsProvider><App /></KeyboardShortcutsProvider></StrictMode>
 );
 
 createRoot(document.getElementById('app')!).render(
