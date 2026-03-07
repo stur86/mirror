@@ -159,6 +159,7 @@ export function App() {
         onOpenProject={handleOpenProject}
         onLoadText={handleLoadText}
         onSaveProject={handleSaveProject}
+        onSaveProjectAs={() => {}}
         onExportTranslation={handleExportTranslation}
       >
         <TranslationEditor

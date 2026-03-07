@@ -11,6 +11,7 @@ interface LayoutProps {
   onOpenProject: () => void;
   onLoadText: () => void;
   onSaveProject: () => void;
+  onSaveProjectAs: () => void;
   onExportTranslation: () => void;
 }
 
@@ -22,6 +23,7 @@ export function Layout({
   onOpenProject,
   onLoadText,
   onSaveProject,
+  onSaveProjectAs,
   onExportTranslation,
 }: LayoutProps) {
   return (
@@ -33,6 +35,7 @@ export function Layout({
         onOpenProject={onOpenProject}
         onLoadText={onLoadText}
         onSaveProject={onSaveProject}
+        onSaveProjectAs={onSaveProjectAs}
         onExportTranslation={onExportTranslation}
       />
       <main className="layout-main">

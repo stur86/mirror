@@ -9,6 +9,7 @@ menu:
   openProject: Open Project
   loadText: Load Text File
   saveProject: Save Project
+  saveProjectAs: Save Project As...
   exportTranslation: Export Translation
   exit: Exit
   help: Help

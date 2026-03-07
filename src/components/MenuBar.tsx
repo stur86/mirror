@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatShortcut } from '../contexts/KeyboardShortcutsContext';
 import {
   Navbar,
   NavbarGroup,
@@ -21,6 +22,7 @@ interface MenuBarProps {
   onOpenProject: () => void;
   onLoadText: () => void;
   onSaveProject: () => void;
+  onSaveProjectAs: () => void;
   onExportTranslation: () => void;
 }
 
@@ -34,6 +36,7 @@ export function MenuBar({
   onOpenProject,
   onLoadText,
   onSaveProject,
+  onSaveProjectAs,
   onExportTranslation,
 }: MenuBarProps) {
   const { t } = useTranslation();
@@ -45,15 +48,45 @@ export function MenuBar({
     }
   };
 
+  const ShortcutLabel = ({ label }: { label: string }) => (
+    <span style={{ opacity: 0.5, fontSize: '0.85em' }}>{label}</span>
+  );
+
   const fileMenu = (
     <Menu>
-      <MenuItem text={t('menu.newFile')} icon="document" onClick={onNewFile} />
+      <MenuItem
+        text={t('menu.newFile')}
+        icon="document"
+        onClick={onNewFile}
+        labelElement={<ShortcutLabel label={formatShortcut('n')} />}
+      />
       <MenuDivider />
-      <MenuItem text={t('menu.openProject')} icon="folder-open" onClick={onOpenProject} />
+      <MenuItem
+        text={t('menu.openProject')}
+        icon="folder-open"
+        onClick={onOpenProject}
+        labelElement={<ShortcutLabel label={formatShortcut('o')} />}
+      />
       <MenuItem text={t('menu.loadText')} icon="document-open" onClick={onLoadText} />
       <MenuDivider />
-      <MenuItem text={t('menu.saveProject')} icon="floppy-disk" onClick={onSaveProject} />
-      <MenuItem text={t('menu.exportTranslation')} icon="export" onClick={onExportTranslation} />
+      <MenuItem
+        text={t('menu.saveProject')}
+        icon="floppy-disk"
+        onClick={onSaveProject}
+        labelElement={<ShortcutLabel label={formatShortcut('s')} />}
+      />
+      <MenuItem
+        text={t('menu.saveProjectAs')}
+        icon="floppy-disk"
+        onClick={onSaveProjectAs}
+        labelElement={<ShortcutLabel label={formatShortcut('s', true)} />}
+      />
+      <MenuItem
+        text={t('menu.exportTranslation')}
+        icon="export"
+        onClick={onExportTranslation}
+        labelElement={<ShortcutLabel label={formatShortcut('e')} />}
+      />
       {isElectron && (
         <>
           <MenuDivider />
