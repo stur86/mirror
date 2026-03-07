@@ -115,9 +115,9 @@ const MIRROR_PROJECT_ACCEPT: FilePickerAcceptType[] = [
 ];
 
 /**
- * Opens the OS save picker and writes content to the chosen file.
+ * Opens the OS save picker (filtered to .mirror.json) and writes content to the chosen file.
  * Returns the FileSystemFileHandle on success, or null if cancelled or unsupported.
- * Falls back to downloadFile if the File System Access API is unavailable.
+ * Falls back to downloadFile (using mimeType) if the File System Access API is unavailable.
  */
 export async function saveFileWithPicker(
   suggestedName: string,
@@ -161,12 +161,12 @@ export async function saveFileToHandle(
 export async function openFileWithPicker(): Promise<{
   name: string;
   content: string;
-  handle: FileSystemFileHandle;
+  handle: FileSystemFileHandle | null;
 } | null> {
   if (typeof window.showOpenFilePicker !== 'function') {
     const result = await readFileAsText('.mirror.json');
     if (!result) return null;
-    return { name: result.name, content: result.content, handle: null as unknown as FileSystemFileHandle };
+    return { name: result.name, content: result.content, handle: null };
   }
   try {
     const [handle] = await window.showOpenFilePicker({
