@@ -17,7 +17,11 @@ const KeyboardShortcutsContext = createContext<KeyboardShortcutsContextValue | n
 
 /** Returns true if running on macOS. */
 export function isMac(): boolean {
-  return navigator.platform.toUpperCase().includes('MAC');
+  // navigator.userAgentData is the modern API; fall back to userAgent string
+  const platform =
+    (navigator as Navigator & { userAgentData?: { platform?: string } })
+      .userAgentData?.platform ?? navigator.userAgent;
+  return /mac/i.test(platform);
 }
 
 /** Returns the platform-appropriate chord for a key combination.
@@ -92,7 +96,8 @@ export function useKeyboardShortcuts() {
 }
 
 /** Convenience hook: registers a single shortcut and cleans up on unmount.
- *  Re-registers whenever chord or callback identity changes. */
+ *  Re-registers whenever chord or callback identity changes.
+ *  Pass a stable callback (e.g. wrapped in useCallback) to avoid unnecessary re-registration. */
 export function useShortcut(chord: string, callback: () => void): void {
   const { registerShortcut } = useKeyboardShortcuts();
   useEffect(() => {
