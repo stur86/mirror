@@ -2,7 +2,8 @@ import type { LockingPoint } from '../contexts/EditorSettingsContext';
 
 /**
  * Returns true if moving `id`'s `side` coordinate to `y` would
- * invert the sorted order of that side's coordinates.
+ * invert or collapse the sorted order of that side's coordinates
+ * (i.e. y crosses or equals a neighbour's coordinate).
  * Returns false if the move is valid (or if the point is not found).
  */
 export function wouldInvertOrder(

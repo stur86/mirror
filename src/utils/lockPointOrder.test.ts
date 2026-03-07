@@ -37,4 +37,10 @@ describe('wouldInvertOrder', () => {
   it('returns false for unknown id', () => {
     expect(wouldInvertOrder(pts, 'z', 'source', 999)).toBe(false);
   });
+
+  it('returns false when there is only one lock point (no neighbours to cross)', () => {
+    const single = [lp('a', 500, 600)];
+    expect(wouldInvertOrder(single, 'a', 'source', 0)).toBe(false);
+    expect(wouldInvertOrder(single, 'a', 'source', 9999)).toBe(false);
+  });
 });
