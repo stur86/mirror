@@ -10,7 +10,7 @@ export function Footer() {
         {t('app.name')}
       </span>
       <span className="footer-right">
-        {t('app.version', { version: '0.1.0' })}
+        {t('app.version', { version: __APP_VERSION__ })}
       </span>
     </footer>
   );

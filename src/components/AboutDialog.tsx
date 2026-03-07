@@ -19,7 +19,7 @@ export function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
       <DialogBody>
         <p><strong>{t('app.name')}</strong></p>
         <p>{t('about.description')}</p>
-        <p>{t('app.version', { version: '0.1.0' })}</p>
+        <p>{t('app.version', { version: __APP_VERSION__ })}</p>
         <p className="bp6-text-muted">{t('about.license')}</p>
       </DialogBody>
       <DialogFooter
