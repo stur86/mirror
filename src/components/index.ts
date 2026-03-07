@@ -23,6 +23,7 @@ export {
   HTMLSelect,
   Radio,
   RadioGroup,
+  Switch,
 } from '@blueprintjs/core';
 
 // Re-export types

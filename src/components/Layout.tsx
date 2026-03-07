@@ -13,6 +13,10 @@ interface LayoutProps {
   onSaveProject: () => void;
   onSaveProjectAs: () => void;
   onExportTranslation: () => void;
+  onPreferences: () => void;
+  autosaveEnabled: boolean;
+  lastSavedAt: Date | null;
+  onToggleAutosave: () => void;
 }
 
 export function Layout({
@@ -25,6 +29,10 @@ export function Layout({
   onSaveProject,
   onSaveProjectAs,
   onExportTranslation,
+  onPreferences,
+  autosaveEnabled,
+  lastSavedAt,
+  onToggleAutosave,
 }: LayoutProps) {
   return (
     <div className="layout">
@@ -37,11 +45,16 @@ export function Layout({
         onSaveProject={onSaveProject}
         onSaveProjectAs={onSaveProjectAs}
         onExportTranslation={onExportTranslation}
+        onPreferences={onPreferences}
       />
       <main className="layout-main">
         {children}
       </main>
-      <Footer />
+      <Footer
+        autosaveEnabled={autosaveEnabled}
+        lastSavedAt={lastSavedAt}
+        onToggleAutosave={onToggleAutosave}
+      />
     </div>
   );
 }

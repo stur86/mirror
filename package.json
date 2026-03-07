@@ -45,6 +45,9 @@
     "directories": {
       "output": "release"
     },
+    "compression": "maximum",
+    "electronLanguages": ["en-GB"],
+    "afterPack": "scripts/afterPack.cjs",
     "files": [
       "dist/**/*",
       "electron-dist/**/*"
@@ -61,7 +64,8 @@
       "target": [
         "dmg",
         "zip"
-      ]
+      ],
+      "icon": "assets/icon1024.png"
     },
     "win": {
       "target": [

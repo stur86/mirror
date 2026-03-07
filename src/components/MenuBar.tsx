@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatShortcut } from '../contexts/KeyboardShortcutsContext';
 import {
@@ -24,6 +24,7 @@ interface MenuBarProps {
   onSaveProject: () => void;
   onSaveProjectAs: () => void;
   onExportTranslation: () => void;
+  onPreferences: () => void;
 }
 
 // Check if running in Electron
@@ -38,9 +39,17 @@ export function MenuBar({
   onSaveProject,
   onSaveProjectAs,
   onExportTranslation,
+  onPreferences,
 }: MenuBarProps) {
   const { t } = useTranslation();
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!isElectron) return;
+    const unsub = window.electronAPI!.onFullscreenChange(setIsFullscreen);
+    return unsub;
+  }, []);
 
   const handleExit = () => {
     if (isElectron) {
@@ -87,6 +96,8 @@ export function MenuBar({
         onClick={onExportTranslation}
         labelElement={<ShortcutLabel label={formatShortcut('e')} />}
       />
+      <MenuDivider />
+      <MenuItem text={t('menu.preferences')} icon="cog" onClick={onPreferences} />
       {isElectron && (
         <>
           <MenuDivider />
@@ -135,13 +146,22 @@ export function MenuBar({
             aria-label={isDark ? t('settings.light') : t('settings.dark')}
           />
           {isElectron && (
-            <Button
-              variant="minimal"
-              icon="cross"
-              aria-label={t('actions.close')}
-              onClick={() => window.close()}
-              style={{ marginLeft: 8 }}
-            />
+            <>
+              <Button
+                variant="minimal"
+                icon={isFullscreen ? 'minimize' : 'maximize'}
+                aria-label={isFullscreen ? t('actions.exitFullscreen') : t('actions.fullscreen')}
+                onClick={() => window.electronAPI!.toggleFullscreen()}
+                style={{ marginLeft: 4 }}
+              />
+              <Button
+                variant="minimal"
+                icon="cross"
+                aria-label={t('actions.close')}
+                onClick={() => window.close()}
+                style={{ marginLeft: 4 }}
+              />
+            </>
           )}
         </NavbarGroup>
       </Navbar>

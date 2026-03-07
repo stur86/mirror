@@ -1,14 +1,11 @@
-name: Build Electron releases (Linux / macOS / Windows)
+name: Build Electron release (macOS)
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
@@ -28,23 +25,14 @@ jobs:
       - name: Compile Electron TypeScript
         run: bun run electron:compile
 
-      - name: Package (Linux)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: bun run package:linux
-
       - name: Package (macOS)
-        if: ${{ matrix.os == 'macos-latest' }}
         env:
           # Disable mac automatic identity discovery to avoid signing attempts
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: bun run package:mac
 
-      - name: Package (Windows)
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: bun run package:win
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-release
+          name: macos-release
           path: release/
