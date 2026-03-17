@@ -67,8 +67,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         aria-label={t('editor.toolbar.style')}
       />
       <Button
-        minimal
-        small
+        variant="minimal"
         icon="bold"
         disabled={disabled}
         active={state?.isBold ?? false}
@@ -77,8 +76,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         onClick={() => editor?.chain().focus().toggleBold().run()}
       />
       <Button
-        minimal
-        small
+        variant="minimal"
         icon="italic"
         disabled={disabled}
         active={state?.isItalic ?? false}
@@ -87,9 +85,8 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         onClick={() => editor?.chain().focus().toggleItalic().run()}
       />
       <Button
-        minimal
-        small
-        icon="unordered-list"
+        variant="minimal"
+        icon="properties"  // There is no "bullet-list" icon in Blueprint, but "properties" looks close enough.
         disabled={disabled}
         active={state?.isBulletList ?? false}
         title={t('editor.toolbar.bulletList')}
@@ -97,8 +94,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         onClick={() => editor?.chain().focus().toggleBulletList().run()}
       />
       <Button
-        minimal
-        small
+        variant="minimal"
         icon="numbered-list"
         disabled={disabled}
         active={state?.isOrderedList ?? false}
