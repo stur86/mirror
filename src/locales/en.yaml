@@ -80,3 +80,11 @@ editor:
     copy: "Copy"
     paste: "Paste"
     selectAll: "Select All"
+  toolbar:
+    style: "Paragraph style"
+    styleNormal: "Normal"
+    styleHeading: "Heading {{level}}"
+    bold: "Bold"
+    italic: "Italic"
+    bulletList: "Bullet list"
+    orderedList: "Numbered list"
