@@ -149,6 +149,12 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
 
   const sourceHeaderAction = (
     <>
+      {sourceEditMode && (
+        <>
+          <EditorToolbar editor={sourceEditor} />
+          <span className="editor-toolbar__sep" />
+        </>
+      )}
       <Button
         minimal
         small
@@ -157,12 +163,6 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
         onClick={toggleSourceEditMode}
         title={t('editor.editSource')}
       />
-      {sourceEditMode && (
-        <>
-          <EditorToolbar editor={sourceEditor} />
-          <span className="editor-toolbar__sep" />
-        </>
-      )}
       <HTMLSelect
         minimal
         options={languageOptions}
