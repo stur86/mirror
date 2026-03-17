@@ -7,6 +7,10 @@ const turndown = new TurndownService({
   codeBlockStyle: 'fenced',
 });
 
+export function htmlToMarkdown(html: string): string {
+  return turndown.turndown(html);
+}
+
 export async function docxToMarkdown(buffer: ArrayBuffer): Promise<string> {
   const result = await mammoth.convertToHtml(
     { arrayBuffer: buffer },
@@ -17,5 +21,5 @@ export async function docxToMarkdown(buffer: ArrayBuffer): Promise<string> {
       ],
     },
   );
-  return turndown.turndown(result.value);
+  return htmlToMarkdown(result.value);
 }

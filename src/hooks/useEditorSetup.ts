@@ -7,6 +7,9 @@ import { Extension, InputRule } from '@tiptap/core';
 // Input rules for ***text*** and ___text___ → bold+italic simultaneously.
 // Tiptap's built-in Bold/Italic rules use [^*]+ which prevents them from
 // matching triple delimiters, so this extension fills the gap.
+export const BOLD_ITALIC_STAR_RE = /(?:^|\s)(\*\*\*((?:[^*]+))\*\*\*)$/;
+export const BOLD_ITALIC_UNDERSCORE_RE = /(?:^|\s)(___((?:[^_]+))___)$/;
+
 const BoldItalic = Extension.create({
   name: 'boldItalic',
   addInputRules() {
@@ -38,8 +41,8 @@ const BoldItalic = Extension.create({
       });
 
     return [
-      makeRule(/(?:^|\s)(\*\*\*((?:[^*]+))\*\*\*)$/),
-      makeRule(/(?:^|\s)(___((?:[^_]+))___)$/),
+      makeRule(BOLD_ITALIC_STAR_RE),
+      makeRule(BOLD_ITALIC_UNDERSCORE_RE),
     ];
   },
 });
