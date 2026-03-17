@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
+import type { Editor } from '@tiptap/react';
 import { useTranslation } from 'react-i18next';
 import { HTMLSelect, Button, Popover, Menu, MenuItem } from '../index';
 import { EditorSettingsProvider, useEditorSettings, type LockingPoint } from '../../contexts/EditorSettingsContext';
@@ -6,6 +7,7 @@ import { detectLanguage } from '../../utils/detectLanguage';
 import { useScrollSync } from '../../hooks/useScrollSync';
 import { EditorPane, type EditorPaneHandle, type MuteRanges, type EditorContextMenuEvent } from './EditorPane';
 import { RulerBar } from './RulerBar';
+import { EditorToolbar } from './EditorToolbar';
 import { LANGUAGES, type LanguageCode } from '../../constants/languages';
 import './TranslationEditor.css';
 
@@ -48,6 +50,11 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
 
   const [sourceEditMode, setSourceEditMode] = useState(false);
   const [contextMenu, setContextMenu] = useState<EditorContextMenuEvent | null>(null);
+
+  const [sourceEditor, setSourceEditor] = useState<Editor | null>(null);
+  const [translationEditor, setTranslationEditor] = useState<Editor | null>(null);
+  const onSourceEditorReady = useCallback((e: Editor | null) => setSourceEditor(e), []);
+  const onTranslationEditorReady = useCallback((e: Editor | null) => setTranslationEditor(e), []);
 
   const toggleSourceEditMode = useCallback(() => {
     if (sourceEditMode) {
@@ -150,6 +157,8 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
         onClick={toggleSourceEditMode}
         title={t('editor.editSource')}
       />
+      {sourceEditMode && <EditorToolbar editor={sourceEditor} />}
+      <span className="editor-toolbar__sep" />
       <HTMLSelect
         minimal
         options={languageOptions}
@@ -161,13 +170,17 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
   );
 
   const translationHeaderAction = (
-    <HTMLSelect
-      minimal
-      options={languageOptions}
-      value={translationLanguage}
-      onChange={(e) => onTranslationLanguageChange(e.target.value as LanguageCode)}
-      title={t('editor.translationLanguage')}
-    />
+    <>
+      <EditorToolbar editor={translationEditor} />
+      <span className="editor-toolbar__sep" />
+      <HTMLSelect
+        minimal
+        options={languageOptions}
+        value={translationLanguage}
+        onChange={(e) => onTranslationLanguageChange(e.target.value as LanguageCode)}
+        title={t('editor.translationLanguage')}
+      />
+    </>
   );
 
   return (
@@ -184,6 +197,7 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
           lang={sourceLanguage}
           muteRanges={sourceMuteRanges}
           onEditorContextMenu={handleEditorContextMenu}
+          onEditorReady={onSourceEditorReady}
         />
         <RulerBar
           sourceContainerRef={sourceContainerRef.current}
@@ -200,6 +214,7 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
           lang={translationLanguage}
           muteRanges={translationMuteRanges}
           onEditorContextMenu={handleEditorContextMenu}
+          onEditorReady={onTranslationEditorReady}
         />
       </div>
       {contextMenu && (

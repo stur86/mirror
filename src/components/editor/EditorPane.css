@@ -184,3 +184,20 @@ body:not(.bp6-dark) .editor-pane {
 .editor-pane--readonly .editor-pane__content .ProseMirror {
   cursor: default;
 }
+
+/* Toolbar separator — thin vertical line between toolbar and language selector */
+.editor-toolbar__sep {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: var(--pane-border-color);
+  margin: 0 4px;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
