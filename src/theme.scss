@@ -83,6 +83,11 @@ $intent-danger-light-active: #904040;
   color: $violet-text;
   background-color: $violet-darkest;
 
+  // Tell the browser to render native form controls (select dropdowns) in dark mode
+  select {
+    color-scheme: dark;
+  }
+
   // Text
   h1, h2, h3, h4, h5, h6,
   .bp6-heading {
