@@ -64,7 +64,7 @@ export function useEditorSetup({
 }: UseEditorSetupOptions): Editor | null {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ heading: { levels: [1, 2, 3, 4, 5] } }),
       Placeholder.configure({
         placeholder,
       }),
