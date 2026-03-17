@@ -157,8 +157,12 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
         onClick={toggleSourceEditMode}
         title={t('editor.editSource')}
       />
-      {sourceEditMode && <EditorToolbar editor={sourceEditor} />}
-      <span className="editor-toolbar__sep" />
+      {sourceEditMode && (
+        <>
+          <EditorToolbar editor={sourceEditor} />
+          <span className="editor-toolbar__sep" />
+        </>
+      )}
       <HTMLSelect
         minimal
         options={languageOptions}

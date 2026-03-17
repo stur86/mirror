@@ -20,16 +20,19 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   const { t } = useTranslation();
 
   // useEditorState runs a selector and only re-renders when the derived values change.
-  // It returns null when editor is null (selector is not invoked in that case).
+  // Guard against null e — in some Tiptap v3 builds the selector is called with null.
   const state = useEditorState({
     editor,
-    selector: ({ editor: e }) => ({
-      isBold: e.isActive('bold'),
-      isItalic: e.isActive('italic'),
-      isBulletList: e.isActive('bulletList'),
-      isOrderedList: e.isActive('orderedList'),
-      styleValue: getStyleValue(e),
-    }),
+    selector: ({ editor: e }) => {
+      if (!e) return null;
+      return {
+        isBold: e.isActive('bold'),
+        isItalic: e.isActive('italic'),
+        isBulletList: e.isActive('bulletList'),
+        isOrderedList: e.isActive('orderedList'),
+        styleValue: getStyleValue(e),
+      };
+    },
   });
 
   const disabled = !editor || !state;
@@ -48,7 +51,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       editor.chain().focus().setParagraph().run();
     } else {
       const level = parseInt(value[1]!, 10) as 1 | 2 | 3 | 4 | 5;
-      editor.chain().focus().toggleHeading({ level }).run();
+      editor.chain().focus().setHeading({ level }).run();
     }
   }
 
