@@ -21,6 +21,7 @@ export interface EditorPaneProps {
   lang?: string;
   muteRanges?: MuteRanges | null;
   onEditorContextMenu?: (event: EditorContextMenuEvent) => void;
+  onEditorReady?: (editor: Editor | null) => void;
 }
 
 export interface EditorPaneHandle {
@@ -70,7 +71,7 @@ function getWordAtPos(
 
 export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
   function EditorPane(
-    { side, content, editable = true, onChange, onContentChange, headerAction, lang, muteRanges, onEditorContextMenu },
+    { side, content, editable = true, onChange, onContentChange, headerAction, lang, muteRanges, onEditorContextMenu, onEditorReady },
     ref
   ) {
     const { t } = useTranslation();
@@ -114,6 +115,16 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(
         editor.setEditable(editable);
       }
     }, [editor, editable]);
+
+    const onEditorReadyRef = useRef(onEditorReady);
+    onEditorReadyRef.current = onEditorReady;
+
+    useEffect(() => {
+      if (!editor) return;
+      const cb = onEditorReadyRef.current;
+      cb?.(editor);
+      return () => cb?.(null);
+    }, [editor]);
 
     // Expose the container element via ref
     useImperativeHandle(
