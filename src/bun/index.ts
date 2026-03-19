@@ -26,8 +26,8 @@ const rpc = BrowserView.defineRPC<MirrorRPCType>({
   },
 });
 
-// Detect dev mode. Electrobun sets ELECTROBUN_DEV=1 when running `electrobun dev`.
-const isDev = process.env["ELECTROBUN_DEV"] === "1";
+// Detect dev mode. Electrobun sets ELECTROBUN_BUILD_ENV=dev when running `electrobun dev`.
+const isDev = process.env["ELECTROBUN_BUILD_ENV"] === "dev";
 
 win = new BrowserWindow({
   title: "Mirror",
