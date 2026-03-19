@@ -31,7 +31,7 @@ const isDev = process.env["ELECTROBUN_DEV"] === "1";
 
 win = new BrowserWindow({
   title: "Mirror",
-  frame: { x: 0, y: 0, width: 1200, height: 800 },
+  frame: { x: 0, y: 0, width: 1200, height: 800 }, // x/y are required by the type; the OS may still override position
   titleBarStyle: "hiddenInset",
   rpc,
   url: isDev ? "http://localhost:5173" : "file://./dist/index.html",
