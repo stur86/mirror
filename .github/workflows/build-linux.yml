@@ -1,4 +1,4 @@
-name: Build Electron release (Linux)
+name: Build Electrobun release (Linux)
 
 on:
   workflow_dispatch:
@@ -19,17 +19,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build web
-        run: bun run build
-
-      - name: Compile Electron TypeScript
-        run: bun run electron:compile
-
-      - name: Package (Linux)
-        run: bun run package:linux
+      - name: Build (Electrobun)
+        run: bun run electrobun:build
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-release
-          path: release/
+          path: build/
