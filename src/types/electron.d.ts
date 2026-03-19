@@ -1,3 +1,6 @@
+// src/types/electron.d.ts
+// window.electronAPI is populated by src/electrobun/view.ts when running inside Electrobun.
+// It is undefined in the pure-web build.
 declare global {
   interface Window {
     electronAPI?: {
