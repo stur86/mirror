@@ -1,6 +1,8 @@
 // src/bun/index.ts
 import { BrowserView, BrowserWindow } from "electrobun/bun";
 import type { MirrorRPCType } from "../shared/rpc.types";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 let isDirty = false;
 let isForceClose = false;
@@ -26,8 +28,19 @@ const rpc = BrowserView.defineRPC<MirrorRPCType>({
   },
 });
 
-// Detect dev mode. Electrobun sets ELECTROBUN_BUILD_ENV=dev when running `electrobun dev`.
-const isDev = process.env["ELECTROBUN_BUILD_ENV"] === "dev";
+// Detect dev mode by reading version.json, which Electrobun writes with channel="dev"
+// for dev builds. The file lives two levels above the bun/ entrypoint directory.
+// Falls back to false (production) if the file is missing or unreadable.
+function detectDevMode(): boolean {
+  try {
+    const versionJsonPath = join(import.meta.dir, "../../Resources/version.json");
+    const info = JSON.parse(readFileSync(versionJsonPath, "utf-8")) as { channel?: string };
+    return info.channel === "dev";
+  } catch {
+    return false;
+  }
+}
+const isDev = detectDevMode();
 
 win = new BrowserWindow({
   title: "Mirror",
