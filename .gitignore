@@ -6,6 +6,7 @@ out
 dist
 electron-dist
 release
+build
 *.tgz
 
 # code coverage
