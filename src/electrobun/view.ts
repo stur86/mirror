@@ -10,7 +10,10 @@ if (typeof window !== "undefined" && (window as unknown as { __electrobun?: unkn
   // Dynamic import to avoid Vite resolving electrobun/view at build time
   // when running as a pure web app.
   import("electrobun/view").then(({ Electroview }) => {
-    // Callback storage — handlers are registered lazily by React components
+    // Callback storage — handlers are registered lazily by React components.
+    // Single-subscriber only: a second call to onCloseRequested/onFullscreenChange
+    // replaces the previous subscriber. Intentional — only App.tsx subscribes to
+    // closeRequested and only MenuBar.tsx subscribes to fullscreenChange.
     let closeRequestedCallback: (() => void) | null = null;
     let fullscreenChangeCallback: ((isFullscreen: boolean) => void) | null = null;
 
@@ -69,5 +72,7 @@ if (typeof window !== "undefined" && (window as unknown as { __electrobun?: unkn
         };
       },
     };
+  }).catch((err: unknown) => {
+    console.error("[mirror] Electroview setup failed:", err);
   });
 }
