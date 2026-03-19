@@ -2,7 +2,6 @@
   "name": "mirror",
   "version": "0.1.1-alpha.2",
   "description": "AI-assisted translation editor",
-  "main": "electron-dist/main.js",
   "author": {
     "name": "Simone Sturniolo",
     "email": "simonesturniolo@gmail.com"
@@ -13,12 +12,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "electron:compile": "npx tsc -p tsconfig.electron.json",
-    "electron:dev": "bun run electron:compile && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "bun run build && bun run electron:compile && electron-builder",
-    "package:linux": "electron-builder --linux --x64 --publish never",
-    "package:mac": "electron-builder --mac --x64 --dir --publish never",
-    "package:win": "electron-builder --win --x64 --publish never",
+    "electrobun:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electrobun dev\"",
+    "electrobun:build": "bun run build && electrobun build",
     "typecheck": "tsc --noEmit",
     "generate-icons": "bun run scripts/generate_icons.ts",
     "test": "bun test"
@@ -30,49 +25,12 @@
     "@types/turndown": "^5.0.6",
     "@vitejs/plugin-react": "^5.1.2",
     "concurrently": "^9.2.1",
-    "electron": "^40.1.0",
-    "electron-builder": "^26.7.0",
     "sass": "^1.97.3",
     "sharp": "^0.34.5",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-plugin-node-polyfills": "^0.25.0",
-    "wait-on": "^9.0.3"
-  },
-  "build": {
-    "appId": "com.mirror.app",
-    "productName": "Mirror",
-    "directories": {
-      "output": "release"
-    },
-    "compression": "maximum",
-    "electronLanguages": ["en-GB"],
-    "afterPack": "scripts/afterPack.cjs",
-    "files": [
-      "dist/**/*",
-      "electron-dist/**/*"
-    ],
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "icon": "assets/icon256.png",
-      "category": "Office"
-    },
-    "mac": {
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "icon": "assets/icon1024.png"
-    },
-    "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ]
-    }
+    "wait-on": "^9.0.4"
   },
   "dependencies": {
     "@blueprintjs/core": "^6.7.0",
@@ -80,6 +38,7 @@
     "@tiptap/extension-placeholder": "^3.18.0",
     "@tiptap/react": "^3.18.0",
     "@tiptap/starter-kit": "^3.18.0",
+    "electrobun": "^1.16.0",
     "franc": "^6.2.0",
     "i18next": "^25.8.0",
     "mammoth": "^1.11.0",
