@@ -7,7 +7,9 @@
 
 // Re-export components as we need them
 export {
+  Breadcrumbs,
   Button,
+  InputGroup,
   Navbar,
   NavbarGroup,
   NavbarHeading,
@@ -23,6 +25,7 @@ export {
   HTMLSelect,
   Radio,
   RadioGroup,
+  Spinner,
   Switch,
 } from '@blueprintjs/core';
 
