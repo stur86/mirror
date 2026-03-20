@@ -1197,8 +1197,7 @@ const handleLoadText = useCallback(async () => {
             markdown = await docxToMarkdown(result.buffer);
           } catch (e) {
             console.error('Failed to parse DOCX file:', e);
-            setFileBrowser(null);
-            return;
+            return; // dialog will still close — JSX onConfirm wrapper handles setFileBrowser(null)
           }
         } else {
           markdown = new TextDecoder('utf-8').decode(result.buffer);
