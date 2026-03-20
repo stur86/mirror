@@ -6,6 +6,8 @@ import type { TranslationEditorHandle } from './components/editor';
 import { LoadTextDialog } from './components/LoadTextDialog';
 import { PreferencesDialog } from './components/PreferencesDialog';
 import { Button, Dialog, DialogBody, DialogFooter } from './components';
+import { FileBrowserDialog } from './components';
+import type { FileFilter, FileBrowserResult } from './components';
 import type { LanguageCode } from './constants/languages';
 import { readFileAsArrayBuffer, saveFileWithPicker, saveFileToHandle, openFileWithPicker, downloadFile } from './utils/fileIO';
 import { detectLanguage } from './utils/detectLanguage';
@@ -49,6 +51,28 @@ export function App() {
   const editorRef = useRef<TranslationEditorHandle>(null);
   const projectFileHandleRef = useRef<FileSystemFileHandle | string | null>(null);
   const isFirstRender = useRef(true);
+
+  const [fileBrowser, setFileBrowser] = useState<{
+    mode: 'save' | 'open';
+    title: string;
+    suggestedName?: string;
+    filters?: FileFilter[];
+  } | null>(null);
+  const fileBrowserCallbackRef = useRef<((result: FileBrowserResult) => void) | null>(null);
+  const fileBrowserCancelRef = useRef<(() => void) | null>(null);
+
+  const showFileBrowser = useCallback(
+    (
+      config: { mode: 'save' | 'open'; title: string; suggestedName?: string; filters?: FileFilter[] },
+      onResult: (result: FileBrowserResult) => void,
+      onCancel?: () => void,
+    ) => {
+      fileBrowserCallbackRef.current = onResult;
+      fileBrowserCancelRef.current = onCancel ?? null;
+      setFileBrowser(config);
+    },
+    [],
+  );
 
   // Refs so the autosave interval always sees the latest values without restarting
   const hasUnsavedChangesRef = useRef(hasUnsavedChanges);
@@ -117,6 +141,41 @@ export function App() {
   }, []);
 
   const handleOpenProject = useCallback(async () => {
+    if (isElectron) {
+      showFileBrowser(
+        {
+          mode: 'open',
+          title: 'Open Project',
+          filters: [{ label: 'Mirror Project', extensions: ['.mirror.json'] }],
+        },
+        (result) => {
+          if (!result.buffer) return;
+          projectFileHandleRef.current = result.path;
+          try {
+            const content = new TextDecoder('utf-8').decode(result.buffer);
+            const project: MirrorProject = JSON.parse(content);
+            if (project.version !== 1 && project.version !== 2) {
+              console.warn('Unknown project version:', project.version);
+            }
+            const toMarkdown = (c: string) =>
+              project.version === 1 ? turndown.turndown(c ?? '') : (c ?? '');
+            setSourceContent(toMarkdown(project.sourceContent));
+            setTranslationContent(toMarkdown(project.translationContent));
+            setSourceLanguage((project.sourceLanguage ?? 'en') as LanguageCode);
+            setTranslationLanguage((project.translationLanguage ?? 'it') as LanguageCode);
+            if (project.lockingPoints?.length) {
+              editorRef.current?.setLockingPoints(project.lockingPoints);
+            }
+            setHasUnsavedChanges(false);
+          } catch (e) {
+            console.error('Failed to parse project file:', e);
+          }
+          // Note: setFileBrowser(null) is handled by the JSX onConfirm wrapper
+        },
+      );
+      return;
+    }
+
     const result = await openFileWithPicker();
     if (!result) return;
 
@@ -142,9 +201,41 @@ export function App() {
     } catch (e) {
       console.error('Failed to parse project file:', e);
     }
-  }, []);
+  }, [showFileBrowser]);
 
   const handleLoadText = useCallback(async () => {
+    if (isElectron) {
+      showFileBrowser(
+        {
+          mode: 'open',
+          title: 'Load Text',
+          filters: [
+            { label: 'Text files', extensions: ['.txt', '.md', '.text', '.markdown', '.docx'] },
+          ],
+        },
+        async (result) => {
+          if (!result.buffer) return;
+          const name = result.path.split('/').pop() ?? result.path;
+          const isDocx = name.toLowerCase().endsWith('.docx');
+          let markdown: string;
+          if (isDocx) {
+            try {
+              markdown = await docxToMarkdown(result.buffer);
+            } catch (e) {
+              console.error('Failed to parse DOCX file:', e);
+              return;
+            }
+          } else {
+            markdown = new TextDecoder('utf-8').decode(result.buffer);
+          }
+          const detected = detectLanguage(markdown) ?? null;
+          setPendingTextFile({ name, markdown, detected });
+          setLoadTextDialogOpen(true);
+        },
+      );
+      return;
+    }
+
     const isDocx = (name: string) => name.toLowerCase().endsWith('.docx');
     const result = await readFileAsArrayBuffer('.txt,.md,.text,.markdown,.docx');
     if (!result) return;
@@ -166,7 +257,7 @@ export function App() {
     detected = detectLanguage(markdown) ?? null;
     setPendingTextFile({ name: result.name, markdown, detected });
     setLoadTextDialogOpen(true);
-  }, []);
+  }, [showFileBrowser]);
 
   const handleLoadTextConfirm = useCallback((side: 'source' | 'translation') => {
     if (!pendingTextFile) return;
@@ -204,6 +295,22 @@ export function App() {
   }, [sourceContent, translationContent, sourceLanguage, translationLanguage]);
 
   const handleSaveProjectAs = useCallback(async (): Promise<boolean> => {
+    if (isElectron) {
+      return new Promise((resolve) => {
+        showFileBrowser(
+          { mode: 'save', title: 'Save Project', suggestedName: 'project.mirror.json' },
+          async (result) => {
+            await saveFileToHandle(result.path, buildProjectJson());
+            projectFileHandleRef.current = result.path;
+            setHasUnsavedChanges(false);
+            setLastSavedAt(new Date());
+            resolve(true);
+          },
+          () => resolve(false),
+        );
+      });
+    }
+
     const json = buildProjectJson();
     const handle = await saveFileWithPicker('project.mirror.json', json, 'application/json');
     if (handle) {
@@ -213,7 +320,7 @@ export function App() {
       return true;
     }
     return false;
-  }, [buildProjectJson]);
+  }, [buildProjectJson, showFileBrowser]);
 
   const handleSaveProject = useCallback(async (): Promise<boolean> => {
     const handle = projectFileHandleRef.current;
@@ -339,6 +446,25 @@ export function App() {
           }
         />
       </Dialog>
+      <FileBrowserDialog
+        isOpen={fileBrowser !== null}
+        mode={fileBrowser?.mode ?? 'open'}
+        title={fileBrowser?.title ?? ''}
+        suggestedName={fileBrowser?.suggestedName}
+        filters={fileBrowser?.filters}
+        onConfirm={(result) => {
+          setFileBrowser(null);
+          fileBrowserCallbackRef.current?.(result);
+          fileBrowserCallbackRef.current = null;
+          fileBrowserCancelRef.current = null;
+        }}
+        onClose={() => {
+          fileBrowserCancelRef.current?.();
+          fileBrowserCallbackRef.current = null;
+          fileBrowserCancelRef.current = null;
+          setFileBrowser(null);
+        }}
+      />
     </>
   );
 }
