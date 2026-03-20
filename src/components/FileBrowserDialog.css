@@ -1,5 +1,7 @@
-/* ---- Theme variables ---- */
-.bp6-dark .fb-dialog {
+/* ---- Theme variables ----
+   Dark is the default. Light overrides are anchored to body to avoid matching
+   intermediate wrapper elements (portals, overlays) that lack .bp6-dark. */
+.fb-dialog {
   --fb-sidebar-bg: #0a0a1a;
   --fb-main-bg: #111118;
   --fb-list-bg: #0d0d1a;
@@ -14,7 +16,7 @@
   --fb-new-folder: #6677aa;
   --fb-error: #cc4444;
 }
-:not(.bp6-dark) .fb-dialog {
+body:not(.bp6-dark) .fb-dialog {
   --fb-sidebar-bg: #f0ece0;
   --fb-main-bg: #f8f4e8;
   --fb-list-bg: #ede9d8;
@@ -32,8 +34,8 @@
 
 /* ---- Dialog sizing ---- */
 .fb-dialog .bp6-dialog {
-  width: 640px;
-  max-width: 90vw;
+  width: 760px;
+  max-width: 92vw;
   padding: 0;
 }
 .fb-dialog .bp6-dialog-header {
@@ -44,7 +46,7 @@
 /* ---- Body layout ---- */
 .fb-body {
   display: flex;
-  height: 320px;
+  height: 420px;
   overflow: hidden;
   border-top: 1px solid var(--fb-border);
   border-bottom: 1px solid var(--fb-border);
