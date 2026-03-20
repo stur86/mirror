@@ -34,3 +34,6 @@ export type {
   ButtonProps,
   MenuItemProps,
 } from '@blueprintjs/core';
+
+export { FileBrowserDialog } from './FileBrowserDialog';
+export type { FileFilter, FileBrowserResult } from './FileBrowserDialog';
