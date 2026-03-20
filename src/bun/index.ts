@@ -47,10 +47,8 @@ win = new BrowserWindow({
   frame: { x: 0, y: 0, width: 1200, height: 800 }, // x/y are required by the type; the OS may still override position
   titleBarStyle: "hiddenInset",
   rpc,
-  url: isDev ? "http://localhost:5173" : "file://./dist/index.html",
-  // TODO: verify the production file path. Electrobun may provide a helper like
-  // `Electrobun.getAppPath()` to get the correct absolute path — check the
-  // "File Paths" section of the Bun APIs documentation.
+  // Dev: load from Vite dev server. Prod: load from views:// (served from Resources/app/views/mirror/).
+  url: isDev ? "http://localhost:5173" : "views://mirror/index.html",
 });
 
 // Track last known fullscreen state to detect changes
