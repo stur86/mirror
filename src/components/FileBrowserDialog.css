@@ -1,6 +1,14 @@
+/* ---- Size constants — edit these two values to resize the dialog ---- */
+.fb-dialog {
+  --fb-dialog-width: 760px;
+  --fb-body-height: 420px;
+}
+
 /* ---- Theme variables ----
    Dark is the default. Light overrides are anchored to body to avoid matching
-   intermediate wrapper elements (portals, overlays) that lack .bp6-dark. */
+   intermediate wrapper elements (portals, overlays) that lack .bp6-dark.
+   Note: className="fb-dialog" is placed on the .bp6-dialog element itself by
+   BlueprintJS, so all rules below target that element and its children directly. */
 .fb-dialog {
   --fb-sidebar-bg: #0a0a1a;
   --fb-main-bg: #111118;
@@ -33,8 +41,9 @@ body:not(.bp6-dark) .fb-dialog {
 }
 
 /* ---- Dialog sizing ---- */
-.fb-dialog .bp6-dialog {
-  width: 760px;
+/* .fb-dialog IS .bp6-dialog — apply sizing directly, not via a descendant selector */
+.fb-dialog {
+  width: var(--fb-dialog-width);
   max-width: 92vw;
   padding: 0;
 }
@@ -46,7 +55,7 @@ body:not(.bp6-dark) .fb-dialog {
 /* ---- Body layout ---- */
 .fb-body {
   display: flex;
-  height: 420px;
+  height: var(--fb-body-height);
   overflow: hidden;
   border-top: 1px solid var(--fb-border);
   border-bottom: 1px solid var(--fb-border);
