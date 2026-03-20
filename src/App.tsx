@@ -341,8 +341,17 @@ export function App() {
   handleSaveProjectRef.current = handleSaveProject;
 
   const handleExportTranslation = useCallback(() => {
+    if (isElectron) {
+      showFileBrowser(
+        { mode: 'save', title: 'Export Translation', suggestedName: 'translation.md' },
+        async (result) => {
+          await saveFileToHandle(result.path, translationContent);
+        },
+      );
+      return;
+    }
     downloadFile('translation.md', translationContent, 'text/markdown');
-  }, [translationContent]);
+  }, [translationContent, showFileBrowser]);
 
   // Autosave interval — only fires when there's a file handle (no surprise pickers)
   useEffect(() => {
