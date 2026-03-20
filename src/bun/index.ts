@@ -1,5 +1,5 @@
 // src/bun/index.ts
-import { BrowserView, BrowserWindow } from "electrobun/bun";
+import { BrowserView, BrowserWindow, Utils } from "electrobun/bun";
 import type { MirrorRPCType } from "../shared/rpc.types";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -12,7 +12,28 @@ let win: InstanceType<typeof BrowserWindow>;
 const rpc = BrowserView.defineRPC<MirrorRPCType>({
   maxRequestTime: 5000,
   handlers: {
-    requests: {},
+    requests: {
+      saveProjectAs: async ({ suggestedName, content }) => {
+        // No native save-file dialog in Electrobun v1 — use a folder picker instead.
+        // The file is written into the chosen folder with the suggested name.
+        const dirs = await Utils.openFileDialog({
+          canChooseFiles: false,
+          canChooseDirectory: true,
+          allowsMultipleSelection: false,
+        });
+        if (!dirs.length || dirs[0] === "") return null;
+        const filename = suggestedName.endsWith(".mirror.json")
+          ? suggestedName
+          : `${suggestedName}.mirror.json`;
+        const fullPath = join(dirs[0], filename);
+        await Bun.write(fullPath, content);
+        return fullPath;
+      },
+      saveProjectToPath: async ({ path, content }) => {
+        await Bun.write(path, content);
+        return true;
+      },
+    },
     messages: {
       setDirty: ({ dirty }) => {
         isDirty = dirty;

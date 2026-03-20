@@ -47,7 +47,7 @@ export function App() {
   );
 
   const editorRef = useRef<TranslationEditorHandle>(null);
-  const projectFileHandleRef = useRef<FileSystemFileHandle | null>(null);
+  const projectFileHandleRef = useRef<FileSystemFileHandle | string | null>(null);
   const isFirstRender = useRef(true);
 
   // Refs so the autosave interval always sees the latest values without restarting

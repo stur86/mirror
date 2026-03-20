@@ -10,6 +10,9 @@ declare global {
       confirmClose: () => void;
       toggleFullscreen: () => void;
       onFullscreenChange: (cb: (isFullscreen: boolean) => void) => () => void;
+      // File dialogs (Electrobun only — not available in pure-web build)
+      saveProjectAs: (suggestedName: string, content: string) => Promise<string | null>;
+      saveProjectToPath: (path: string, content: string) => Promise<void>;
     };
   }
 }

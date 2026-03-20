@@ -42,6 +42,8 @@ if (typeof window !== "undefined" && (window as unknown as { __electrobun?: unkn
         confirmClose: () => void;
         toggleFullscreen: () => void;
         onFullscreenChange: (cb: (isFullscreen: boolean) => void) => () => void;
+        saveProjectAs: (suggestedName: string, content: string) => Promise<string | null>;
+        saveProjectToPath: (path: string, content: string) => Promise<void>;
       };
     }).electronAPI = {
       isElectron: true,
@@ -70,6 +72,14 @@ if (typeof window !== "undefined" && (window as unknown as { __electrobun?: unkn
         return () => {
           fullscreenChangeCallback = null;
         };
+      },
+
+      saveProjectAs: (suggestedName: string, content: string) => {
+        return electroview.rpc!.request.saveProjectAs({ suggestedName, content });
+      },
+
+      saveProjectToPath: async (path: string, content: string) => {
+        await electroview.rpc!.request.saveProjectToPath({ path, content });
       },
     };
   }).catch((err: unknown) => {

@@ -5,7 +5,14 @@ import type { RPCSchema } from "electrobun/bun";
 export type MirrorRPCType = {
   // Handlers that run in the bun (main) process
   bun: RPCSchema<{
-    requests: Record<string, never>;
+    requests: {
+      // Renderer asks bun to show a folder picker and write the file there.
+      // Returns the full written path, or null if cancelled.
+      saveProjectAs: { params: { suggestedName: string; content: string }; response: string | null };
+      // Renderer asks bun to write content to a known path (no dialog).
+      // Returns true on success.
+      saveProjectToPath: { params: { path: string; content: string }; response: boolean };
+    };
     messages: {
       // Renderer tells main: dirty state changed
       setDirty: { dirty: boolean };
