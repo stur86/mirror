@@ -17,7 +17,10 @@ import { useTranslation } from 'react-i18next';
 
 const turndown = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-' });
 
-const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
+// window.__electrobun is set synchronously by Electrobun before any JS runs.
+// window.electronAPI is populated asynchronously (dynamic import in view.ts),
+// so it must not be used for this guard — it would always be undefined at module load time.
+const isElectron = typeof window !== 'undefined' && !!(window as unknown as { __electrobun?: unknown }).__electrobun;
 
 interface MirrorProject {
   version: number;
