@@ -44,6 +44,10 @@ if (typeof window !== "undefined" && (window as unknown as { __electrobun?: unkn
         onFullscreenChange: (cb: (isFullscreen: boolean) => void) => () => void;
         saveProjectAs: (suggestedName: string, content: string) => Promise<string | null>;
         saveProjectToPath: (path: string, content: string) => Promise<void>;
+        listDirectory: (path: string) => Promise<{ entries: Array<{ name: string; isDirectory: boolean }> } | { error: string }>;
+        getStandardPaths: () => Promise<{ home: string; desktop: string; documents: string; downloads: string }>;
+        createDirectory: (path: string) => Promise<{ ok: boolean }>;
+        readFile: (path: string) => Promise<{ base64: string } | { error: string }>;
       };
     }).electronAPI = {
       isElectron: true,
@@ -80,6 +84,22 @@ if (typeof window !== "undefined" && (window as unknown as { __electrobun?: unkn
 
       saveProjectToPath: async (path: string, content: string) => {
         await electroview.rpc!.request.saveProjectToPath({ path, content });
+      },
+
+      listDirectory: (path: string) => {
+        return electroview.rpc!.request.listDirectory({ path });
+      },
+
+      getStandardPaths: () => {
+        return electroview.rpc!.request.getStandardPaths({});
+      },
+
+      createDirectory: (path: string) => {
+        return electroview.rpc!.request.createDirectory({ path });
+      },
+
+      readFile: (path: string) => {
+        return electroview.rpc!.request.readFile({ path });
       },
     };
   }).catch((err: unknown) => {
