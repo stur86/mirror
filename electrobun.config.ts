@@ -1,9 +1,13 @@
 // electrobun.config.ts
+// electrobun.config.ts is loaded as a real ESM module by Bun, so we can import package.json
+// directly. This keeps the version in sync with `bun pm version prerelease` automatically.
+import pkg from "./package.json" with { type: "json" };
+
 export default {
   app: {
     name: "Mirror",
     identifier: "com.mirror.app",
-    version: "0.1.1-alpha.2",
+    version: pkg.version,
   },
   build: {
     bun: {
