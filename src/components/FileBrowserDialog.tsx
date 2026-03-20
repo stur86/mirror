@@ -77,6 +77,7 @@ export function FileBrowserDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const navigateTo = useCallback(async (path: string) => {
     setIsLoading(true);
@@ -119,27 +120,31 @@ export function FileBrowserDialog({
         }
       });
     });
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, navigateTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleConfirm = useCallback(async () => {
-    if (!filename) return;
+  const handleConfirm = useCallback(async (overridePath?: string) => {
+    const fullPath = overridePath ?? joinPath(currentPath, filename);
+    const resolvedFilename = fullPath.split('/').pop() ?? '';
+    if (!resolvedFilename || isConfirming) return;
     setConfirmError(null);
-    const fullPath = joinPath(currentPath, filename);
+    setIsConfirming(true);
 
     if (mode === 'save') {
       onConfirm({ path: fullPath });
+      setIsConfirming(false);
       return;
     }
 
     // open mode: read file via RPC
     const result = await window.electronAPI!.readFile(fullPath);
+    setIsConfirming(false);
     if ('error' in result) {
       setConfirmError(result.error);
       return;
     }
     const bytes = Uint8Array.from(atob(result.base64), (c) => c.charCodeAt(0));
     onConfirm({ path: fullPath, buffer: bytes.buffer });
-  }, [filename, currentPath, mode, onConfirm]);
+  }, [filename, currentPath, mode, onConfirm, isConfirming]);
 
   const handleCreateFolder = useCallback(async () => {
     if (!newFolderName.trim()) return;
@@ -255,24 +260,9 @@ export function FileBrowserDialog({
                     }}
                     onDoubleClick={() => {
                       if (!isDir && !isDimmed) {
-                        setFilename(entry.name);
-                        // handleConfirm reads filename from state; set it directly
                         const fullPath = joinPath(currentPath, entry.name);
-                        setConfirmError(null);
-                        if (mode === 'save') {
-                          onConfirm({ path: fullPath });
-                          return;
-                        }
-                        window.electronAPI!.readFile(fullPath).then((result) => {
-                          if ('error' in result) {
-                            setConfirmError(result.error);
-                            return;
-                          }
-                          const bytes = Uint8Array.from(atob(result.base64), (c) =>
-                            c.charCodeAt(0),
-                          );
-                          onConfirm({ path: fullPath, buffer: bytes.buffer });
-                        });
+                        setFilename(entry.name);
+                        handleConfirm(fullPath);
                       }
                     }}
                   >
@@ -351,6 +341,7 @@ export function FileBrowserDialog({
               setSelectedFilter(
                 val === '__all__' ? null : (filters.find((f) => f.label === val) ?? null),
               );
+              if (mode === 'open') setFilename('');
             }}
             options={[
               ...filters.map((f) => ({ label: f.label, value: f.label })),
@@ -359,7 +350,7 @@ export function FileBrowserDialog({
           />
         )}
         {confirmError && <span className="fb-confirm-error">{confirmError}</span>}
-        <Button intent="primary" disabled={!filename} onClick={handleConfirm}>
+        <Button intent="primary" disabled={!filename || isConfirming} onClick={handleConfirm}>
           {mode === 'save' ? 'Save' : 'Open'}
         </Button>
         <Button onClick={onClose}>Cancel</Button>
