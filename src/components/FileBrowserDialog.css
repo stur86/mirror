@@ -42,7 +42,7 @@ body:not(.bp6-dark) .fb-dialog {
 
 /* ---- Dialog sizing ---- */
 /* .fb-dialog IS .bp6-dialog — apply sizing directly, not via a descendant selector */
-.fb-dialog {
+.fb-dialog.bp6-dialog {
   width: var(--fb-dialog-width);
   max-width: 92vw;
   padding: 0;
