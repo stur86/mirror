@@ -96,7 +96,7 @@ A BlueprintJS `Dialog` containing:
 
 ## RPC Layer
 
-Four new request types added to `src/shared/rpc.types.ts`:
+Four new request types added under `MirrorRPCType.bun.requests` in `src/shared/rpc.types.ts` (alongside the existing `saveProjectAs` and `saveProjectToPath`):
 
 ```typescript
 listDirectory: {
@@ -113,16 +113,16 @@ createDirectory: {
 };
 readFile: {
   params: { path: string };
-  response: { base64: string };
+  response: { base64: string } | { error: string };
 };
 ```
 
 **Bun-side implementations** (`src/bun/index.ts`):
 
-- `listDirectory`: `readdirSync(path, { withFileTypes: true })` — directories first, then alphabetical; dotfiles excluded
+- `listDirectory`: `readdirSync(path, { withFileTypes: true })` — directories first, then alphabetical; dotfiles excluded (consistent with standard file browser behaviour; hidden config directories are not useful to end users)
 - `getStandardPaths`: `os.homedir()` + `path.join(home, 'Desktop' | 'Documents' | 'Downloads')`
 - `createDirectory`: `mkdirSync(path)` in try/catch; returns `{ ok: false }` on error
-- `readFile`: `readFileSync(path)` → `Buffer.from(data).toString('base64')`
+- `readFile`: `readFileSync(path)` → `Buffer.from(data).toString('base64')` wrapped in try/catch; returns `{ error: message }` on failure
 
 All four are exposed on `window.electronAPI` via `src/electrobun/view.ts` and typed in `src/types/electron.d.ts`.
 
@@ -143,13 +143,15 @@ error: string | null         // listDirectory failure
 ```
 
 **Behaviour:**
-- On open: `getStandardPaths` and `listDirectory(home)` fetched in parallel; dialog starts at home
-- Navigation (directory click, breadcrumb click, sidebar click): calls `listDirectory(newPath)`, updates `currentPath`; breadcrumb is derived by splitting `currentPath` on the path separator
+- On open: `getStandardPaths` and `listDirectory(home)` fetched in parallel; dialog starts at home. If `listDirectory(home)` fails, fall back to `listDirectory('/')`.
+- Navigation (directory click, breadcrumb click, sidebar click): calls `listDirectory(newPath)`, updates `currentPath` only on success; on failure, `currentPath` stays at its previous value and `error` is set. Breadcrumb is derived by splitting `currentPath` on `/` (paths are always POSIX-style absolute paths on macOS/Linux — the only supported Electrobun platforms).
+- `listDirectory` failure mid-navigation: `error` state is set, the file list area shows the error message, and the previous directory remains navigable via breadcrumb/sidebar.
 - Filter change: re-filters the already-fetched `entries` client-side (no new RPC)
-- New folder: inline input on `+ New Folder` click; Enter calls `createDirectory` then refreshes listing; Escape cancels
-- Confirm (open): calls `readFile(currentPath + '/' + filename)`, decodes base64 to `ArrayBuffer`, calls `onConfirm({ path, buffer })`
-- Confirm (save): calls `onConfirm({ path: currentPath + '/' + filename })` directly
-- OK disabled when `filename` is empty
+- New folder: inline input on `+ New Folder` click; Enter calls `createDirectory` then refreshes listing; Escape cancels. On `{ ok: false }`, show an inline error message below the input field (do not close the input).
+- Confirm (open): calls `readFile(path.join(currentPath, filename))` — use `path.join` to avoid double-slash when `currentPath` is `/`; on `{ error }` response, shows error in-dialog (no `onConfirm` call); on `{ base64 }` response, decodes to `ArrayBuffer` and calls `onConfirm({ path, buffer })`
+- Confirm (save): calls `onConfirm({ path: path.join(currentPath, filename) })` directly
+- OK disabled when `filename` is empty (open mode: nothing selected yet; save mode: field cleared)
+- On cancel (`onClose`): `fileBrowserCallbackRef.current` is set to `null` to prevent stale callback invocation
 
 **BlueprintJS components used:** `Dialog`, `Breadcrumbs`, `InputGroup`, `HTMLSelect`, `Button`, `Spinner`
 
@@ -173,9 +175,14 @@ Each handler checks `isElectron` and branches:
 
 | Handler | Electrobun path | Web path |
 |---|---|---|
-| `handleOpenProject` | `FileBrowserDialog` open mode, `.mirror.json` filter | `openFileWithPicker` (unchanged) |
-| `handleLoadText` | `FileBrowserDialog` open mode, text filter | `readFileAsArrayBuffer` (unchanged) |
+| `handleOpenProject` | `FileBrowserDialog` open mode, `.mirror.json` filter; no `suggestedName` | `openFileWithPicker` (unchanged) |
+| `handleLoadText` | `FileBrowserDialog` open mode, text filter; no `suggestedName` | `readFileAsArrayBuffer` (unchanged) |
 | `handleSaveProjectAs` | `FileBrowserDialog` save mode, `suggestedName='project.mirror.json'` | `showSaveFilePicker` (unchanged) |
+| `handleSaveProject` | Uses existing `saveProjectToPath` RPC directly (no dialog needed — path already known) | unchanged |
+
+In open mode with no `suggestedName`, the filename field starts empty and OK is disabled until the user clicks a file.
+
+`fileBrowserCallbackRef.current` is set immediately before `setFileBrowser(config)` and cleared to `null` in the `onClose` handler.
 
 `FileBrowserDialog` is rendered once in App.tsx's JSX alongside the other dialogs, with `isOpen={fileBrowser !== null}`.
 
@@ -191,7 +198,7 @@ Each handler checks `isElectron` and branches:
 | `src/bun/index.ts` | 4 new request handlers |
 | `src/electrobun/view.ts` | 4 new `window.electronAPI` methods |
 | `src/types/electron.d.ts` | Type the 4 new API methods |
-| `src/components/index.ts` | Export `FileBrowserDialog`, `FileFilter`, `FileBrowserResult` |
+| `src/components/index.ts` | Export `FileBrowserDialog`, `FileFilter`, `FileBrowserResult`; add `Breadcrumbs`, `InputGroup`, `Spinner` to BlueprintJS re-exports |
 | `src/App.tsx` | `fileBrowser` state + updated Electrobun-path handlers |
 
 **Unchanged:** `src/utils/fileIO.ts` and all other components.
