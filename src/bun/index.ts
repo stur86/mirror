@@ -1,8 +1,9 @@
 // src/bun/index.ts
 import { BrowserView, BrowserWindow, Utils } from "electrobun/bun";
 import type { MirrorRPCType } from "../shared/rpc.types";
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync, mkdirSync } from "fs";
 import { join } from "path";
+import { homedir } from "os";
 
 let isDirty = false;
 let isForceClose = false;
@@ -32,6 +33,50 @@ const rpc = BrowserView.defineRPC<MirrorRPCType>({
       saveProjectToPath: async ({ path, content }) => {
         await Bun.write(path, content);
         return true;
+      },
+
+      listDirectory: async ({ path: dirPath }) => {
+        try {
+          const raw = readdirSync(dirPath, { withFileTypes: true });
+          const entries = raw
+            .filter((e) => !e.name.startsWith('.'))
+            .map((e) => ({ name: e.name, isDirectory: e.isDirectory() }))
+            .sort((a, b) => {
+              if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+              return a.name.localeCompare(b.name);
+            });
+          return { entries };
+        } catch (e) {
+          return { error: String(e) };
+        }
+      },
+
+      getStandardPaths: async () => {
+        const home = homedir();
+        return {
+          home,
+          desktop: join(home, 'Desktop'),
+          documents: join(home, 'Documents'),
+          downloads: join(home, 'Downloads'),
+        };
+      },
+
+      createDirectory: async ({ path: dirPath }) => {
+        try {
+          mkdirSync(dirPath);
+          return { ok: true };
+        } catch {
+          return { ok: false };
+        }
+      },
+
+      readFile: async ({ path: filePath }) => {
+        try {
+          const data = readFileSync(filePath);
+          return { base64: Buffer.from(data).toString('base64') };
+        } catch (e) {
+          return { error: String(e) };
+        }
       },
     },
     messages: {
