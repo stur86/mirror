@@ -53,6 +53,7 @@ const rpc = BrowserView.defineRPC<MirrorRPCType>({
 
       getStandardPaths: async () => {
         const home = homedir();
+        // Standard XDG directory names — correct on macOS and common Linux DEs (GNOME, KDE, etc.)
         return {
           home,
           desktop: join(home, 'Desktop'),
@@ -65,7 +66,8 @@ const rpc = BrowserView.defineRPC<MirrorRPCType>({
         try {
           mkdirSync(dirPath);
           return { ok: true };
-        } catch {
+        } catch (e) {
+          console.error('[createDirectory]', e);
           return { ok: false };
         }
       },
@@ -73,7 +75,7 @@ const rpc = BrowserView.defineRPC<MirrorRPCType>({
       readFile: async ({ path: filePath }) => {
         try {
           const data = readFileSync(filePath);
-          return { base64: Buffer.from(data).toString('base64') };
+          return { base64: data.toString('base64') };
         } catch (e) {
           return { error: String(e) };
         }
