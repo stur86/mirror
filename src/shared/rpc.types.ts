@@ -12,6 +12,28 @@ export type MirrorRPCType = {
       // Renderer asks bun to write content to a known path (no dialog).
       // Returns true on success.
       saveProjectToPath: { params: { path: string; content: string }; response: boolean };
+      // Renderer asks bun to list a directory's contents.
+      // Directories come first, sorted alphabetically. Dotfiles excluded.
+      // Returns { error } on permission/IO failure (no throw).
+      listDirectory: {
+        params: { path: string };
+        response: { entries: Array<{ name: string; isDirectory: boolean }> } | { error: string };
+      };
+      // Renderer asks bun for standard OS directory paths.
+      getStandardPaths: {
+        params: Record<string, never>;
+        response: { home: string; desktop: string; documents: string; downloads: string };
+      };
+      // Renderer asks bun to create a directory. Returns ok: false on error (no throw).
+      createDirectory: {
+        params: { path: string };
+        response: { ok: boolean };
+      };
+      // Renderer asks bun to read a file as base64. Returns { error } on failure (no throw).
+      readFile: {
+        params: { path: string };
+        response: { base64: string } | { error: string };
+      };
     };
     messages: {
       // Renderer tells main: dirty state changed
