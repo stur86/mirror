@@ -22,8 +22,13 @@ jobs:
       - name: Build (Electrobun)
         run: bun run electrobun:build --env=stable
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Zip artifacts folder
+        run: zip -r electrobun-linux-release.zip artifacts/
+
+      - name: Upload to Google Drive
+        uses: adityak74/google-drive-upload-git-action@main
         with:
-          name: linux-release
-          path: artifacts/
+          credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
+          filename: electrobun-linux-release.zip
+          folderId: ${{ secrets.GDRIVE_FOLDER_ID }}
+          overwrite: true
