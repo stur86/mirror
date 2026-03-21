@@ -23,7 +23,7 @@ jobs:
         run: bun run electrobun:build --env=stable
 
       - name: Zip artifacts folder
-        run: zip -r electrobun-windows-release.zip artifacts/
+        run:  Compress-Archive -Path artifacts/* -DestinationPath electrobun-windows-release.zip
 
       - name: Upload to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
