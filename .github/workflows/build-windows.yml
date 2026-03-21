@@ -31,7 +31,7 @@ jobs:
         run: bun run package:win
 
       - name: Zip release folder
-        run: zip -r windows-release.zip release/
+        run: Compress-Archive -Path release/* -DestinationPath windows-release.zip
 
       - name: Get version tag
         id: version
