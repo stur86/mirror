@@ -28,8 +28,13 @@ jobs:
       - name: Package (Windows)
         run: bun run package:win
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Zip release folder
+        run: zip -r windows-release.zip release/
+
+      - name: Upload to Google Drive
+        uses: adityak74/google-drive-upload-git-action@main
         with:
-          name: windows-release
-          path: release/
+          credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
+          filename: windows-release.zip        # Path to file or folder
+          folderId: ${{ secrets.GDRIVE_FOLDER_ID }}
+          overwrite: true

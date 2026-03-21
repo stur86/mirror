@@ -31,8 +31,13 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: bun run package:mac
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Zip release folder
+        run: zip -r macos-release.zip release/
+
+      - name: Upload to Google Drive
+        uses: adityak74/google-drive-upload-git-action@main
         with:
-          name: macos-release
-          path: release/
+          credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
+          filename: macos-release.zip        # Path to file or folder
+          folderId: ${{ secrets.GDRIVE_FOLDER_ID }}
+          overwrite: true

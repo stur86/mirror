@@ -28,8 +28,13 @@ jobs:
       - name: Package (Linux)
         run: bun run package:linux
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+      - name: Zip release folder
+        run: zip -r linux-release.zip release/
+
+      - name: Upload to Google Drive
+        uses: adityak74/google-drive-upload-git-action@main
         with:
-          name: linux-release
-          path: release/
+          credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
+          filename: linux-release.zip        # Path to file or folder
+          folderId: ${{ secrets.GDRIVE_FOLDER_ID }}
+          overwrite: true
