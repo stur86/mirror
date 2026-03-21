@@ -1,0 +1,33 @@
+name: Upload to Google Drive
+description: Upload a file to Google Drive using a service account (cross-platform)
+
+inputs:
+  credentials:
+    description: Service account credentials JSON (raw or base64-encoded)
+    required: true
+  filename:
+    description: Path to the file to upload
+    required: true
+  folderId:
+    description: Google Drive folder ID to upload into
+    required: true
+  overwrite:
+    description: Overwrite existing file with the same name
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Install Google API client
+      shell: bash
+      run: pip install --quiet google-api-python-client google-auth
+
+    - name: Upload file
+      shell: bash
+      env:
+        INPUT_CREDENTIALS: ${{ inputs.credentials }}
+        INPUT_FILENAME: ${{ inputs.filename }}
+        INPUT_FOLDER_ID: ${{ inputs.folderId }}
+        INPUT_OVERWRITE: ${{ inputs.overwrite }}
+      run: python "${{ github.action_path }}/upload.py"

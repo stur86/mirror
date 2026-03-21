@@ -26,9 +26,9 @@ jobs:
         run: zip -r electrobun-macos-release.zip artifacts/
 
       - name: Upload to Google Drive
-        uses: adityak74/google-drive-upload-git-action@main
+        uses: ./.github/actions/gdrive-upload
         with:
           credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
           filename: electrobun-macos-release.zip
           folderId: ${{ secrets.GDRIVE_FOLDER_ID }}
-          overwrite: true
+          overwrite: 'true'
