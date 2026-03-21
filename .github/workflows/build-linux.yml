@@ -6,6 +6,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -25,10 +27,15 @@ jobs:
       - name: Zip artifacts folder
         run: zip -r electrobun-linux-release.zip artifacts/
 
-      - name: Upload to Google Drive
-        uses: adityak74/google-drive-upload-git-action@main
-        with:
-          credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
-          filename: electrobun-linux-release.zip
-          folderId: ${{ secrets.GDRIVE_FOLDER_ID }}
-          overwrite: true
+      - name: Get version tag
+        id: version
+        run: echo "tag=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          gh release view "$TAG" > /dev/null 2>&1 || \
+            gh release create "$TAG" --title "$TAG" --prerelease --notes ""
+          gh release upload "$TAG" electrobun-linux-release.zip --clobber
