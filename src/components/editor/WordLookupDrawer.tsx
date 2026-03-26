@@ -18,6 +18,8 @@ export function WordLookupDrawer({ word, wiktionary, targetLangLabel, onClose }:
   function handleCopyTranslation(w: string) {
     navigator.clipboard.writeText(w).then(() => {
       showToast(t('toast.copied'), Intent.SUCCESS);
+    }).catch(() => {
+      // clipboard write can be denied silently
     });
   }
 
@@ -53,7 +55,7 @@ export function WordLookupDrawer({ word, wiktionary, targetLangLabel, onClose }:
                 <div className="word-lookup-drawer__pos">{entry.partOfSpeech}</div>
                 <ol className="word-lookup-drawer__defs">
                   {entry.definitions.map((def, di) => (
-                    <li key={di}>
+                    <li key={di} data-n={di + 1}>
                       {/* Wiktionary definitions contain trusted HTML (wiki markup rendered server-side) */}
                       <span dangerouslySetInnerHTML={{ __html: def.definition }} />
                       {def.examples.map((ex, xi) => (

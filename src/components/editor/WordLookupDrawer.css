@@ -73,6 +73,12 @@
   line-height: 1.4;
 }
 
+.word-lookup-drawer__defs li::before {
+  content: attr(data-n) ". ";
+  color: var(--bp6-dark-text-muted, #8f99a8);
+  font-size: 11px;
+}
+
 .word-lookup-drawer__defs li + li {
   margin-top: 4px;
 }
