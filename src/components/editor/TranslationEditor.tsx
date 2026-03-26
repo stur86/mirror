@@ -303,25 +303,14 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
                       onClick={() => {
                         const pane = contextMenu.side === 'source' ? sourceLanguage : translationLanguage;
                         const other = contextMenu.side === 'source' ? translationLanguage : sourceLanguage;
-                        if (lookupState?.pinned) {
-                          setLookupState({
-                            word: contextMenu.word!,
-                            lang: pane,
-                            targetLang: other,
-                            x: contextMenu.x,
-                            y: contextMenu.y,
-                            pinned: true,
-                          });
-                        } else {
-                          setLookupState({
-                            word: contextMenu.word!,
-                            lang: pane,
-                            targetLang: other,
-                            x: contextMenu.x,
-                            y: contextMenu.y,
-                            pinned: false,
-                          });
-                        }
+                        setLookupState({
+                          word: contextMenu.word!,
+                          lang: pane,
+                          targetLang: other,
+                          x: contextMenu.x,
+                          y: contextMenu.y,
+                          pinned: lookupState?.pinned ?? false,
+                        });
                         setContextMenu(null);
                       }}
                     />
