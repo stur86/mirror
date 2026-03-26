@@ -178,6 +178,8 @@ async function fetchWiktionary(
   const langEntry = LANGUAGE_WIKTIONARY_MAP[lang];
   const targetEntry = LANGUAGE_WIKTIONARY_MAP[targetLang];
   if (!langEntry) throw new Error(`Unsupported language: ${lang}`);
+  const normalizedWord = word.trim().toLowerCase();
+  if (!normalizedWord) throw new Error('Empty word');
 
   const headers: Record<string, string> = {
     'Api-User-Agent': `Mirror-App/${APP_VERSION} (translation editor)`,
@@ -185,7 +187,7 @@ async function fetchWiktionary(
 
   // 1. Fetch definitions via REST API
   const defResponse = await fetch(
-    `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`,
+    `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(normalizedWord)}`,
     { headers },
   );
   if (!defResponse.ok) throw new Error(`Definition fetch failed: ${defResponse.status}`);
@@ -197,7 +199,7 @@ async function fetchWiktionary(
   if (targetEntry) {
     try {
       const sectionsResp = await fetch(
-        `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=sections&format=json&origin=*`,
+        `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(normalizedWord)}&prop=sections&format=json&origin=*`,
         { headers },
       );
       if (sectionsResp.ok) {
@@ -208,7 +210,7 @@ async function fetchWiktionary(
         const translationSections = sections.filter((s: any) => s.line === 'Translations');
         for (const section of translationSections) {
           const htmlResp = await fetch(
-            `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=text&section=${section.index}&format=json&origin=*`,
+            `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(normalizedWord)}&prop=text&section=${section.index}&format=json&origin=*`,
             { headers },
           );
           if (!htmlResp.ok) continue;
@@ -225,7 +227,7 @@ async function fetchWiktionary(
   }
 
   const result: WiktionaryResult = {
-    word,
+    word: normalizedWord,
     entries,
     translations: [...new Set(translations)],
   };
