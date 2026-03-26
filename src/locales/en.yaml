@@ -88,3 +88,9 @@ editor:
     italic: "Italic"
     bulletList: "Bullet list"
     orderedList: "Numbered list"
+
+toast:
+  copied: "Copied!"
+  lookupError: "Could not load dictionary entry"
+  projectLoadError: "Failed to open project file"
+  docxLoadError: "Failed to read DOCX file"

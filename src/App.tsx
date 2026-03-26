@@ -5,13 +5,14 @@ import { TranslationEditor } from './components/editor';
 import type { TranslationEditorHandle } from './components/editor';
 import { LoadTextDialog } from './components/LoadTextDialog';
 import { PreferencesDialog } from './components/PreferencesDialog';
-import { Button, Dialog, DialogBody, DialogFooter } from './components';
+import { Button, Dialog, DialogBody, DialogFooter, Intent } from './components';
 import type { LanguageCode } from './constants/languages';
 import { readFileAsArrayBuffer, saveFileWithPicker, saveFileToHandle, openFileWithPicker, downloadFile } from './utils/fileIO';
 import { detectLanguage } from './utils/detectLanguage';
 import { docxToMarkdown } from './utils/docxConvert';
 import { useShortcut, shortcutChord } from './contexts/KeyboardShortcutsContext';
 import { useTranslation } from 'react-i18next';
+import { useToast } from './contexts/ToastContext';
 
 const turndown = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-' });
 
@@ -28,6 +29,7 @@ interface MirrorProject {
 
 export function App() {
   const { t } = useTranslation();
+  const { showToast } = useToast();
   const [isDark, setIsDark] = useState(true);
   const [sourceContent, setSourceContent] = useState('');
   const [translationContent, setTranslationContent] = useState('');
@@ -141,6 +143,7 @@ export function App() {
       setHasUnsavedChanges(false);
     } catch (e) {
       console.error('Failed to parse project file:', e);
+      showToast(t('toast.projectLoadError'), Intent.DANGER);
     }
   }, []);
 
@@ -157,6 +160,7 @@ export function App() {
         markdown = await docxToMarkdown(result.buffer);
       } catch (e) {
         console.error('Failed to parse DOCX file:', e);
+        showToast(t('toast.docxLoadError'), Intent.DANGER);
         return;
       }
     } else {

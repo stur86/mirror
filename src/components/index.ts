@@ -24,10 +24,14 @@ export {
   Radio,
   RadioGroup,
   Switch,
+  OverlayToaster,
+  Toast2,
+  Intent,
 } from '@blueprintjs/core';
 
 // Re-export types
 export type {
   ButtonProps,
   MenuItemProps,
+  ToastProps,
 } from '@blueprintjs/core';
