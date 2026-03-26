@@ -38,3 +38,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Build and artifacts
 build/
 artifacts/
+
+# Superpowers brainstorm sessions
+.superpowers/
