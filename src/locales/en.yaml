@@ -94,3 +94,11 @@ toast:
   lookupError: "Could not load dictionary entry"
   projectLoadError: "Failed to open project file"
   docxLoadError: "Failed to read DOCX file"
+
+lookup:
+  menuItem: "Look up: {{word}}"
+  loading: "Loading..."
+  pin: "Pin to drawer"
+  clickToCopy: "Click to copy"
+  noEntry: "No entry found"
+  translations: "Translations"

@@ -27,6 +27,7 @@ export {
   OverlayToaster,
   Toast2,
   Intent,
+  Spinner,
 } from '@blueprintjs/core';
 
 // Re-export types
