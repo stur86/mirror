@@ -1,0 +1,104 @@
+.word-lookup-popover {
+  position: fixed;
+  z-index: 50;
+  width: 280px;
+  background: var(--bp6-dark-bg2, #252a31);
+  border: 1px solid var(--bp6-dark-divider, #404854);
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  font-size: 13px;
+  color: var(--bp6-dark-text, #f5f8fa);
+}
+
+.word-lookup-popover__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid var(--bp6-dark-divider, #404854);
+  gap: 6px;
+}
+
+.word-lookup-popover__word {
+  font-weight: 600;
+  font-size: 14px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.word-lookup-popover__pos {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--bp6-dark-text-muted, #8f99a8);
+  margin-left: 4px;
+}
+
+.word-lookup-popover__controls {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.word-lookup-popover__body {
+  padding: 8px 10px;
+}
+
+.word-lookup-popover__defs {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.word-lookup-popover__defs li {
+  padding: 2px 0;
+  line-height: 1.4;
+  color: var(--bp6-dark-text, #f5f8fa);
+}
+
+.word-lookup-popover__defs li + li {
+  margin-top: 4px;
+}
+
+.word-lookup-popover__defs li::before {
+  content: attr(data-n) ". ";
+  color: var(--bp6-dark-text-muted, #8f99a8);
+}
+
+.word-lookup-popover__translations {
+  border-top: 1px solid var(--bp6-dark-divider, #404854);
+  padding-top: 6px;
+  font-size: 12px;
+}
+
+.word-lookup-popover__translations-label {
+  color: var(--bp6-dark-text-muted, #8f99a8);
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.word-lookup-popover__translation-word {
+  display: inline-block;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 2px;
+  color: var(--bp6-intent-primary, #4c90f0);
+}
+
+.word-lookup-popover__translation-word:hover {
+  background: rgba(76, 144, 240, 0.15);
+}
+
+.word-lookup-popover__status {
+  padding: 12px 10px;
+  text-align: center;
+  color: var(--bp6-dark-text-muted, #8f99a8);
+  font-size: 12px;
+}
+
+.word-lookup-popover__error {
+  padding: 8px 10px;
+  color: var(--bp6-intent-danger, #e76565);
+  font-size: 12px;
+}

@@ -10,6 +10,11 @@ import { RulerBar } from './RulerBar';
 import { EditorToolbar } from './EditorToolbar';
 import { LANGUAGES, type LanguageCode } from '../../constants/languages';
 import './TranslationEditor.css';
+import { LANGUAGE_WIKTIONARY_MAP, useWiktionary } from '../../hooks/useWiktionary';
+import { WordLookupPopover } from './WordLookupPopover';
+import { WordLookupDrawer } from './WordLookupDrawer';
+import { MenuDivider, Intent } from '../index';
+import { useToast } from '../../contexts/ToastContext';
 
 const languageOptions = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
 
@@ -27,6 +32,15 @@ interface TranslationEditorProps {
   translationLanguage: LanguageCode;
   onSourceLanguageChange: (lang: LanguageCode) => void;
   onTranslationLanguageChange: (lang: LanguageCode) => void;
+}
+
+interface LookupState {
+  word: string;
+  lang: string;
+  targetLang: string;
+  x: number;
+  y: number;
+  pinned: boolean;
 }
 
 const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEditorProps>(
@@ -50,6 +64,26 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
 
   const [sourceEditMode, setSourceEditMode] = useState(false);
   const [contextMenu, setContextMenu] = useState<EditorContextMenuEvent | null>(null);
+
+  const { showToast } = useToast();
+  const [lookupState, setLookupState] = useState<LookupState | null>(null);
+
+  const wiktionary = useWiktionary(
+    lookupState?.word ?? null,
+    lookupState?.lang ?? null,
+    lookupState?.targetLang ?? null,
+  );
+
+  // Show a toast when a lookup fails
+  const prevStatusRef = useRef<string>('idle');
+  useEffect(() => {
+    if (wiktionary.status === 'error' && prevStatusRef.current !== 'error') {
+      showToast(t('toast.lookupError'), Intent.WARNING);
+    }
+    prevStatusRef.current = wiktionary.status;
+  }, [wiktionary.status, showToast, t]);
+
+  const handleLookupClose = useCallback(() => setLookupState(null), []);
 
   const [sourceEditor, setSourceEditor] = useState<Editor | null>(null);
   const [translationEditor, setTranslationEditor] = useState<Editor | null>(null);
@@ -258,12 +292,59 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
                   text={t('editor.contextMenu.selectAll')}
                   onClick={() => { contextMenu.actions.selectAll(); setContextMenu(null); }}
                 />
+                {contextMenu.word && LANGUAGE_WIKTIONARY_MAP[
+                  contextMenu.side === 'source' ? sourceLanguage : translationLanguage
+                ] && (
+                  <>
+                    <MenuDivider />
+                    <MenuItem
+                      text={t('lookup.menuItem', { word: contextMenu.word })}
+                      icon="book"
+                      onClick={() => {
+                        const pane = contextMenu.side === 'source' ? sourceLanguage : translationLanguage;
+                        const other = contextMenu.side === 'source' ? translationLanguage : sourceLanguage;
+                        setLookupState({
+                          word: contextMenu.word!,
+                          lang: pane,
+                          targetLang: other,
+                          x: contextMenu.x,
+                          y: contextMenu.y,
+                          pinned: lookupState?.pinned ?? false,
+                        });
+                        setContextMenu(null);
+                      }}
+                    />
+                  </>
+                )}
               </Menu>
             }
           >
             <span />
           </Popover>
         </div>
+      )}
+      {lookupState && !lookupState.pinned && (
+        <WordLookupPopover
+          word={lookupState.word}
+          x={lookupState.x}
+          y={lookupState.y}
+          wiktionary={wiktionary}
+          targetLangLabel={
+            LANGUAGES.find(l => l.code === lookupState.targetLang)?.name ?? lookupState.targetLang
+          }
+          onPin={() => setLookupState(s => s ? { ...s, pinned: true } : null)}
+          onClose={handleLookupClose}
+        />
+      )}
+      {lookupState?.pinned && (
+        <WordLookupDrawer
+          word={lookupState.word}
+          wiktionary={wiktionary}
+          targetLangLabel={
+            LANGUAGES.find(l => l.code === lookupState.targetLang)?.name ?? lookupState.targetLang
+          }
+          onClose={handleLookupClose}
+        />
       )}
     </div>
   );

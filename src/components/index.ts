@@ -27,12 +27,17 @@ export {
   RadioGroup,
   Spinner,
   Switch,
+  OverlayToaster,
+  Toast2,
+  Intent,
+  Spinner,
 } from '@blueprintjs/core';
 
 // Re-export types
 export type {
   ButtonProps,
   MenuItemProps,
+  ToastProps,
 } from '@blueprintjs/core';
 
 export { FileBrowserDialog } from './FileBrowserDialog';
