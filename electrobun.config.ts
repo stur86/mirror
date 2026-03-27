@@ -19,5 +19,15 @@ export default {
     copy: {
       "dist": "views/mirror",
     },
+    mac: {
+      // .iconset folder converted to .icns by iconutil during build (macOS only)
+      icons: "assets/icon.iconset",
+    },
+    linux: {
+      icon: "assets/icon256.png",
+    },
+    win: {
+      icon: "assets/icon.ico",
+    },
   },
 };

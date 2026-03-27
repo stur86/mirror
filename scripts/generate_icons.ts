@@ -26,3 +26,29 @@ const icoBuffers = await Promise.all(
 const icoData = await pngToIco(icoBuffers);
 fs.writeFileSync(`${outDir}/icon.ico`, icoData);
 console.log("Generated icon.ico");
+
+// Generate macOS .iconset folder
+// iconutil (macOS-only) converts this to AppIcon.icns during `electrobun build`
+const iconsetDir = `${outDir}/icon.iconset`;
+fs.mkdirSync(iconsetDir, { recursive: true });
+const iconsetSizes: Array<[number, string]> = [
+  [16,   "icon_16x16.png"],
+  [32,   "icon_16x16@2x.png"],
+  [32,   "icon_32x32.png"],
+  [64,   "icon_32x32@2x.png"],
+  [128,  "icon_128x128.png"],
+  [256,  "icon_128x128@2x.png"],
+  [256,  "icon_256x256.png"],
+  [512,  "icon_256x256@2x.png"],
+  [512,  "icon_512x512.png"],
+  [1024, "icon_512x512@2x.png"],
+];
+await Promise.all(
+  iconsetSizes.map(([size, filename]) =>
+    sharp(input, { density: 1024 })
+      .resize(size, size)
+      .png()
+      .toFile(`${iconsetDir}/${filename}`)
+  )
+);
+console.log("Generated icon.iconset/");

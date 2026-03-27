@@ -4,8 +4,6 @@ node_modules
 # output
 out
 dist
-electron-dist
-release
 build
 *.tgz
 
@@ -39,6 +37,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Build and artifacts
 build/
 artifacts/
+assets/icon.iconset/
 
 # Superpowers brainstorm sessions
 .superpowers/

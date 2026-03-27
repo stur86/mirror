@@ -42,9 +42,6 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
-    rollupOptions: {
-      external: ['electrobun/view'],
-    },
   },
   server: {
     port: 5173,
