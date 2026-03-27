@@ -2,6 +2,7 @@ name: Build Electrobun release (Windows)
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:
@@ -24,13 +25,13 @@ jobs:
       - name: Build (Electrobun)
         run: bun run electrobun:build
 
-      - name: Zip artifacts folder
-        run: Compress-Archive -Path artifacts/* -DestinationPath windows-release.zip
-
       - name: Get version tag
         id: version
         shell: bash
         run: echo "tag=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Zip artifacts folder
+        run: Compress-Archive -Path artifacts/* -DestinationPath mirror-${{ steps.version.outputs.tag }}-windows.zip
 
       - name: Create or update GitHub Release
         shell: bash
@@ -40,4 +41,4 @@ jobs:
           TAG="${{ steps.version.outputs.tag }}"
           gh release view "$TAG" > /dev/null 2>&1 || \
             gh release create "$TAG" --title "$TAG" --prerelease --notes ""
-          gh release upload "$TAG" windows-release.zip --clobber
+          gh release upload "$TAG" mirror-$TAG-windows.zip --clobber

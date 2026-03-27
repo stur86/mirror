@@ -2,6 +2,7 @@ name: Build Electrobun release (Linux)
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:
@@ -24,12 +25,12 @@ jobs:
       - name: Build (Electrobun)
         run: bun run electrobun:build
 
-      - name: Zip artifacts folder
-        run: zip -r linux-release.zip artifacts/
-
       - name: Get version tag
         id: version
         run: echo "tag=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Zip artifacts folder
+        run: zip -r mirror-${{ steps.version.outputs.tag }}-linux.zip artifacts/
 
       - name: Create or update GitHub Release
         env:
@@ -38,4 +39,4 @@ jobs:
           TAG="${{ steps.version.outputs.tag }}"
           gh release view "$TAG" > /dev/null 2>&1 || \
             gh release create "$TAG" --title "$TAG" --prerelease --notes ""
-          gh release upload "$TAG" linux-release.zip --clobber
+          gh release upload "$TAG" mirror-$TAG-linux.zip --clobber
