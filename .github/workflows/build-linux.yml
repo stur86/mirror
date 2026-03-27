@@ -21,17 +21,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build web
-        run: bun run build
+      - name: Build (Electrobun)
+        run: bun run electrobun:build
 
-      - name: Compile Electron TypeScript
-        run: bun run electron:compile
-
-      - name: Package (Linux)
-        run: bun run package:linux
-
-      - name: Zip release folder
-        run: zip -r linux-release.zip release/
+      - name: Zip artifacts folder
+        run: zip -r linux-release.zip artifacts/
 
       - name: Get version tag
         id: version

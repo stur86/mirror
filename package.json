@@ -13,7 +13,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "electrobun:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electrobun dev\"",
-    "electrobun:build": "bun run build && electrobun build",
+    "electrobun:build": "bun run build && electrobun build --env=stable",
     "typecheck": "tsc --noEmit",
     "generate-icons": "bun run scripts/generate_icons.ts",
     "test": "bun test"
