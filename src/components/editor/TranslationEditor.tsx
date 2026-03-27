@@ -292,15 +292,18 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
                   text={t('editor.contextMenu.selectAll')}
                   onClick={() => { contextMenu.actions.selectAll(); setContextMenu(null); }}
                 />
-                {contextMenu.word && LANGUAGE_WIKTIONARY_MAP[
-                  contextMenu.side === 'source' ? sourceLanguage : translationLanguage
-                ] && (
-                  <>
-                    <MenuDivider />
-                    <MenuItem
-                      text={t('lookup.menuItem', { word: contextMenu.word })}
-                      icon="book"
-                      onClick={() => {
+                {(() => {
+                  const menuWord = contextMenu.word;
+                  const menuLang = contextMenu.side === 'source' ? sourceLanguage : translationLanguage;
+                  const supported = !!LANGUAGE_WIKTIONARY_MAP[menuLang];
+                  return (
+                    <>
+                      <MenuDivider />
+                      <MenuItem
+                        text={menuWord ? t('lookup.menuItem', { word: menuWord }) : t('lookup.menuItemGeneric')}
+                        icon="book"
+                        disabled={!menuWord || !supported}
+                        onClick={() => {
                         const pane = contextMenu.side === 'source' ? sourceLanguage : translationLanguage;
                         const other = contextMenu.side === 'source' ? translationLanguage : sourceLanguage;
                         setLookupState({
@@ -312,10 +315,11 @@ const TranslationEditorInner = forwardRef<TranslationEditorHandle, TranslationEd
                           pinned: lookupState?.pinned ?? false,
                         });
                         setContextMenu(null);
-                      }}
-                    />
-                  </>
-                )}
+                        }}
+                      />
+                    </>
+                  );
+                })()}
               </Menu>
             }
           >

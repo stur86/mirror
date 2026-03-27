@@ -97,6 +97,7 @@ toast:
 
 lookup:
   menuItem: "Look up: {{word}}"
+  menuItemGeneric: "Look up word"
   loading: "Loading..."
   pin: "Pin to drawer"
   clickToCopy: "Click to copy"
