@@ -12,8 +12,6 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "outDir": "electron-dist",
-
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
@@ -24,6 +22,6 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["electron/**/*"],
-  "exclude": ["node_modules/bun-types/*", "**/*.test.ts", "src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules/bun-types/*", "**/*.test.ts"]
 }

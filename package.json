@@ -1,8 +1,7 @@
 {
   "name": "mirror",
-  "version": "0.1.1-alpha.2",
+  "version": "0.2.0-alpha.0",
   "description": "AI-assisted translation editor",
-  "main": "electron-dist/main.js",
   "author": {
     "name": "Simone Sturniolo",
     "email": "simonesturniolo@gmail.com"
@@ -13,81 +12,45 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "electron:compile": "npx tsc -p tsconfig.electron.json",
-    "electron:dev": "bun run electron:compile && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "bun run build && bun run electron:compile && electron-builder",
-    "package:linux": "electron-builder --linux --x64 --publish never",
-    "package:mac": "electron-builder --mac --x64 --dir --publish never",
-    "package:win": "electron-builder --win --x64 --publish never",
+    "electrobun:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && bunx electrobun dev\"",
+    "electrobun:build": "bun run build && bunx electrobun build --env=stable",
     "typecheck": "tsc --noEmit",
     "generate-icons": "bun run scripts/generate_icons.ts",
     "test": "bun test"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/react": "^19.2.10",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/turndown": "^5.0.6",
-    "@vitejs/plugin-react": "^5.1.2",
+    "@vitejs/plugin-react": "^5.2.0",
     "concurrently": "^9.2.1",
-    "electron": "^40.1.0",
-    "electron-builder": "^26.7.0",
-    "sass": "^1.97.3",
+    "png-to-ico": "^3.0.1",
+    "sass": "^1.98.0",
     "sharp": "^0.34.5",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-plugin-node-polyfills": "^0.25.0",
-    "wait-on": "^9.0.3"
+    "wait-on": "^9.0.4"
   },
-  "build": {
-    "appId": "com.mirror.app",
-    "productName": "Mirror",
-    "directories": {
-      "output": "release"
-    },
-    "compression": "maximum",
-    "electronLanguages": ["en-GB"],
-    "afterPack": "scripts/afterPack.cjs",
-    "files": [
-      "dist/**/*",
-      "electron-dist/**/*"
-    ],
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "icon": "assets/icon256.png",
-      "category": "Office"
-    },
-    "mac": {
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "icon": "assets/icon1024.png"
-    },
-    "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ]
-    }
+  "overrides": {
+    "yallist": "^4.0.0"
   },
   "dependencies": {
-    "@blueprintjs/core": "^6.7.0",
-    "@blueprintjs/icons": "^6.5.1",
-    "@tiptap/extension-placeholder": "^3.18.0",
-    "@tiptap/react": "^3.18.0",
-    "@tiptap/starter-kit": "^3.18.0",
+    "@blueprintjs/core": "^6.11.1",
+    "@blueprintjs/icons": "^6.8.0",
+    "@tiptap/extension-placeholder": "^3.20.5",
+    "@tiptap/react": "^3.20.5",
+    "@tiptap/starter-kit": "^3.20.5",
+    "electrobun": "1.16.0",
     "franc": "^6.2.0",
-    "i18next": "^25.8.0",
-    "mammoth": "^1.11.0",
+    "i18next": "^25.10.10",
+    "mammoth": "^1.12.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-i18next": "^16.5.4",
+    "react-i18next": "^16.6.6",
     "tiptap-markdown": "^0.9.0",
     "turndown": "^7.2.2",
-    "yaml": "^2.8.2"
+    "yaml": "^2.8.3"
   }
 }

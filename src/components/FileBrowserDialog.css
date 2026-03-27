@@ -1,0 +1,198 @@
+/* ---- Size constants — edit these two values to resize the dialog ---- */
+.fb-dialog {
+  --fb-dialog-width: 760px;
+  --fb-body-height: 420px;
+}
+
+/* ---- Theme variables ----
+   Dark is the default. Light overrides are anchored to body to avoid matching
+   intermediate wrapper elements (portals, overlays) that lack .bp6-dark.
+   Note: className="fb-dialog" is placed on the .bp6-dialog element itself by
+   BlueprintJS, so all rules below target that element and its children directly. */
+.fb-dialog {
+  --fb-sidebar-bg: #0a0a1a;
+  --fb-main-bg: #111118;
+  --fb-list-bg: #0d0d1a;
+  --fb-border: #222230;
+  --fb-text: #ccccdd;
+  --fb-text-muted: #555566;
+  --fb-text-dim: #333344;
+  --fb-selected-bg: #1a2a4a;
+  --fb-selected-text: #88aaff;
+  --fb-hover-bg: #1a1a2e;
+  --fb-places-label: #444455;
+  --fb-new-folder: #6677aa;
+  --fb-error: #cc4444;
+}
+body:not(.bp6-dark) .fb-dialog {
+  --fb-sidebar-bg: #f0ece0;
+  --fb-main-bg: #f8f4e8;
+  --fb-list-bg: #ede9d8;
+  --fb-border: #d0c8b0;
+  --fb-text: #2a2010;
+  --fb-text-muted: #888070;
+  --fb-text-dim: #b0a890;
+  --fb-selected-bg: #c8d8f0;
+  --fb-selected-text: #1a3a7a;
+  --fb-hover-bg: #e0dcc8;
+  --fb-places-label: #a09888;
+  --fb-new-folder: #5566aa;
+  --fb-error: #aa2222;
+}
+
+/* ---- Dialog sizing ---- */
+/* .fb-dialog IS .bp6-dialog — apply sizing directly, not via a descendant selector */
+.fb-dialog.bp6-dialog {
+  width: var(--fb-dialog-width);
+  max-width: 92vw;
+  padding: 0;
+}
+.fb-dialog .bp6-dialog-header {
+  padding: 12px 16px 8px;
+  flex-shrink: 0;
+}
+
+/* ---- Body layout ---- */
+.fb-body {
+  display: flex;
+  height: var(--fb-body-height);
+  overflow: hidden;
+  border-top: 1px solid var(--fb-border);
+  border-bottom: 1px solid var(--fb-border);
+}
+
+/* ---- Sidebar ---- */
+.fb-sidebar {
+  width: 120px;
+  flex-shrink: 0;
+  background: var(--fb-sidebar-bg);
+  border-right: 1px solid var(--fb-border);
+  padding: 8px 4px;
+  overflow-y: auto;
+}
+.fb-places-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fb-places-label);
+  padding: 0 8px 6px;
+}
+.fb-place-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--fb-text);
+  user-select: none;
+}
+.fb-place-item:hover { background: var(--fb-hover-bg); }
+.fb-place-item.fb-active {
+  background: var(--fb-selected-bg);
+  color: var(--fb-selected-text);
+}
+
+/* ---- Main area ---- */
+.fb-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--fb-main-bg);
+  padding: 8px;
+  min-width: 0;
+}
+.fb-breadcrumb {
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+/* ---- File list ---- */
+.fb-list {
+  flex: 1;
+  background: var(--fb-list-bg);
+  border-radius: 4px;
+  padding: 4px;
+  overflow-y: auto;
+}
+.fb-list-message {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--fb-text-muted);
+  font-style: italic;
+}
+.fb-list-error {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--fb-error);
+}
+.fb-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--fb-text);
+  user-select: none;
+}
+.fb-entry:hover { background: var(--fb-hover-bg); }
+.fb-entry.fb-selected {
+  background: var(--fb-selected-bg);
+  color: var(--fb-selected-text);
+}
+.fb-entry.fb-dimmed {
+  color: var(--fb-text-dim);
+  cursor: default;
+}
+.fb-entry.fb-dimmed:hover { background: transparent; }
+
+/* ---- New folder ---- */
+.fb-new-folder-row { padding: 4px 4px 0; }
+.fb-new-folder-link {
+  font-size: 11px;
+  color: var(--fb-new-folder);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+}
+.fb-new-folder-link:hover { text-decoration: underline; }
+.fb-new-folder-input-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 2px 0;
+}
+.fb-new-folder-error {
+  font-size: 10px;
+  color: var(--fb-error);
+  padding: 2px 4px;
+}
+
+/* ---- Footer ---- */
+.fb-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  flex-shrink: 0;
+}
+.fb-footer-label {
+  font-size: 12px;
+  color: var(--fb-text-muted);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.fb-filename-field { flex: 1; min-width: 0; }
+.fb-confirm-error {
+  font-size: 11px;
+  color: var(--fb-error);
+  flex-shrink: 0;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
