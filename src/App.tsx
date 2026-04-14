@@ -18,10 +18,8 @@ import { useToast } from './contexts/ToastContext';
 
 const turndown = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-' });
 
-// window.__electrobun is set synchronously by Electrobun before any JS runs.
-// window.electronAPI is populated asynchronously (dynamic import in view.ts),
-// so it must not be used for this guard — it would always be undefined at module load time.
-const isElectron = typeof window !== 'undefined' && !!(window as unknown as { __electrobun?: unknown }).__electrobun;
+// window.electronAPI is injected synchronously by Electron's preload script via contextBridge.
+const isElectron = typeof window !== 'undefined' && !!window.electronAPI?.isElectron;
 
 interface MirrorProject {
   version: number;

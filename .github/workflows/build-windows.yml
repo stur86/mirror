@@ -1,4 +1,4 @@
-name: Build Electrobun release (Windows)
+name: Build Electron release (Windows)
 
 on:
   workflow_dispatch:
@@ -22,16 +22,22 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build (Electrobun)
-        run: bun run electrobun:build
+      - name: Build web
+        run: bun run build
+
+      - name: Compile Electron TypeScript
+        run: bun run electron:compile
+
+      - name: Package (Windows)
+        run: bun run package:win
 
       - name: Get version tag
         id: version
         shell: bash
         run: echo "tag=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
-      - name: Zip artifacts folder
-        run: Compress-Archive -Path artifacts/* -DestinationPath mirror-${{ steps.version.outputs.tag }}-windows.zip
+      - name: Zip release folder
+        run: Compress-Archive -Path release/* -DestinationPath mirror-${{ steps.version.outputs.tag }}-windows.zip
 
       - name: Create or update GitHub Release
         shell: bash

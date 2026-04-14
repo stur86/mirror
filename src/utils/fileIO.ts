@@ -116,19 +116,14 @@ const MIRROR_PROJECT_ACCEPT: FilePickerAcceptType[] = [
 
 /**
  * Opens the OS save picker (filtered to .mirror.json) and writes content to the chosen file.
- * In Electrobun: uses a folder picker via RPC (no native save-file dialog in v1); returns the
- *   written path as a string.
  * In browser with File System Access API: returns a FileSystemFileHandle.
- * Falls back to downloadFile if neither is available.
+ * Falls back to downloadFile if the API is unavailable.
  */
 export async function saveFileWithPicker(
   suggestedName: string,
   content: string,
   mimeType: string,
-): Promise<FileSystemFileHandle | string | null> {
-  if (window.electronAPI?.saveProjectAs) {
-    return window.electronAPI.saveProjectAs(suggestedName, content);
-  }
+): Promise<FileSystemFileHandle | null> {
   if (typeof window.showSaveFilePicker !== 'function') {
     downloadFile(suggestedName, content, mimeType);
     return null;

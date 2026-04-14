@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "outDir": "electron-dist",
+    "esModuleInterop": true,
+    "module": "nodenext",
+    "target": "esnext",
+    "types": ["node", "electron"],
+    "moduleResolution": "nodenext"
+  },
+  "include": ["electron/**/*"],
+  "exclude": ["node_modules/bun-types/*", "src/**/*", "**/*.test.ts"]
+}
