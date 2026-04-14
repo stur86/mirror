@@ -28,7 +28,8 @@ fs.writeFileSync(`${outDir}/icon.ico`, icoData);
 console.log("Generated icon.ico");
 
 // Generate macOS .iconset folder
-// iconutil (macOS-only) converts this to AppIcon.icns during `electrobun build`
+// iconutil (macOS-only) can convert this to AppIcon.icns if needed;
+// electron-builder uses icon1024.png directly for macOS packaging.
 const iconsetDir = `${outDir}/icon.iconset`;
 fs.mkdirSync(iconsetDir, { recursive: true });
 const iconsetSizes: Array<[number, string]> = [

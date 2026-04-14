@@ -34,39 +34,53 @@ src/
 │   ├── MenuBar.tsx      # Top menu bar with File/Help menus
 │   ├── Footer.tsx       # Bottom status bar
 │   ├── AboutDialog.tsx  # About dialog
+│   ├── LoadTextDialog.tsx   # Dialog for loading source text
+│   ├── PreferencesDialog.tsx # Autosave and app preferences
+│   ├── FileBrowserDialog.tsx # Custom file browser (Electron only — uses IPC)
+│   ├── FileBrowserDialog.css
 │   └── editor/
-│       ├── EditorPane.tsx       # Single editor pane (source or translation)
+│       ├── EditorPane.tsx        # Single editor pane (source or translation)
 │       ├── EditorPane.css
+│       ├── EditorToolbar.tsx     # Per-pane formatting toolbar
 │       ├── TranslationEditor.tsx # Dual-pane editor with ruler bar
 │       ├── TranslationEditor.css
-│       ├── RulerBar.tsx         # Ruler bar with locking point UI
-│       └── RulerBar.css
+│       ├── RulerBar.tsx          # Ruler bar with locking point UI
+│       ├── RulerBar.css
+│       ├── WordLookupDrawer.tsx  # Wiktionary lookup side drawer
+│       ├── WordLookupDrawer.css
+│       ├── WordLookupPopover.tsx # Wiktionary lookup inline popover
+│       └── WordLookupPopover.css
 ├── constants/
-│   └── languages.ts     # Supported language definitions
+│   ├── languages.ts         # Supported language definitions
+│   └── lockPointColors.ts   # 8-color palette for locking point markers
 ├── contexts/
-│   └── EditorSettingsContext.tsx  # Scroll sync & locking points state
+│   ├── EditorSettingsContext.tsx    # Scroll sync & locking points state
+│   ├── KeyboardShortcutsContext.tsx # Ref-based keyboard shortcut registry
+│   └── ToastContext.tsx             # Global toast notification system
 ├── hooks/
 │   ├── useEditorSetup.ts        # Tiptap editor initialization (includes tiptap-markdown)
 │   ├── useScrollSync.ts         # Lock-point-based scroll synchronization
-│   └── useParagraphPositions.ts # Paragraph position utilities
+│   ├── useWiktionary.ts         # Wiktionary API fetch, parse, and cache
+│   └── useParagraphPositions.ts # Paragraph position utilities (currently unused)
 ├── i18n/
 │   └── index.ts         # i18next configuration
 ├── locales/
 │   └── en.yaml          # English translations (add more locales here)
 ├── types/
-│   └── electron.d.ts    # Electron API type declarations
+│   └── electron.d.ts    # Electron API type declarations (window.electronAPI)
 ├── utils/
-│   ├── docxConvert.ts   # DOCX → Markdown (mammoth + turndown)
-│   ├── fileIO.ts        # File read/download utilities
-│   ├── detectLanguage.ts # Language detection via franc
+│   ├── docxConvert.ts      # DOCX → Markdown (mammoth + turndown)
+│   ├── fileIO.ts           # File read/download utilities
+│   ├── detectLanguage.ts   # Language detection via franc
+│   └── lockPointOrder.ts   # Pure helper: wouldInvertOrder check
 ├── App.tsx              # Root app component
 ├── main.tsx             # Entry point
 ├── style.css            # Global styles
 └── theme.scss           # Theme definitions (colors, component overrides)
 
 electron/
-├── main.ts              # Electron main process
-└── preload.ts           # Preload script (exposes electronAPI)
+├── main.ts              # Electron main process (IPC handlers incl. file system ops)
+└── preload.cts          # Preload script (contextBridge → window.electronAPI)
 
 dist/                    # Vite build output (web)
 electron-dist/           # Compiled Electron code
