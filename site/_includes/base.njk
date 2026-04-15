@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mirror — AI-assisted translation editor</title>
+  <title>Mirror — Text editor for translation</title>
   <meta name="description" content="A dual-pane translation editor with intelligent scroll sync and locking points. Available for Linux, macOS and Windows.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -404,8 +404,8 @@
     <div class="hero-inner">
       <span class="hero-version">{{ release.tag }}</span>
       <h1 class="hero-title">Mirror</h1>
-      <p class="hero-tagline">AI-assisted translation editor</p>
-      <p class="hero-desc">A dual-pane desktop editor for translators — with intelligent scroll sync, locking points, and inline word lookup.</p>
+      <p class="hero-tagline">{{ hero.tagline }}</p>
+      <p class="hero-desc">{{ hero.description }}</p>
 
       <div class="download-area">
         <a href="https://github.com/{{ release.githubRepo }}/releases" class="btn-primary" id="btn-primary">

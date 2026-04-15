@@ -2,6 +2,9 @@
 layout: base.njk
 title: Mirror
 permalink: /
+hero:
+  tagline: A modern text editor for translation
+  description: A dual-pane translation editor with intelligent scroll sync and locking points. Available for Linux, macOS and Windows.
 footer:
   author:
     name: Simone Sturniolo

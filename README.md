@@ -1,6 +1,6 @@
 # Mirror
 
-AI-assisted translation editor. Available as an Electron desktop app or pure web build.
+Translation-focused text editor. Available as an Electron desktop app or pure web build.
 
 ## Development
 
