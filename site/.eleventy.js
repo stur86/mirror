@@ -8,6 +8,9 @@ module.exports = function (eleventyConfig) {
   });
   eleventyConfig.setLibrary("md", md);
 
+  // Passthrough copy for favicon
+  eleventyConfig.addPassthroughCopy({"../assets/icon32.png": "icon.png"});
+
   return {
     dir: {
       input: ".",
