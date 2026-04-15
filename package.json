@@ -51,7 +51,7 @@
     "directories": {
       "output": "release"
     },
-    "compression": "maximum",
+    "compression": "normal",
     "electronLanguages": ["en-GB"],
     "afterPack": "scripts/afterPack.cjs",
     "files": [

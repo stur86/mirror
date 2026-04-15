@@ -135,6 +135,14 @@ async function main() {
     });
   }
 
+  // On Linux, skip libsecret/keyring initialisation. Chromium's Safe Storage
+  // tries to create a "Chromium Keys" item in the system keyring on every
+  // launch when none exists, which blocks the main process for 15-20 s on
+  // Cinnamon even when the keyring daemon is running and unlocked.
+  if (process.platform === 'linux') {
+    app.commandLine.appendSwitch('password-store', 'basic');
+  }
+
   app.whenReady().then(() => {
     createWindow();
 
