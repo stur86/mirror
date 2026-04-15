@@ -19,6 +19,8 @@
     "package:linux": "electron-builder --linux --x64 --publish never",
     "package:mac": "electron-builder --mac --x64 --dir --publish never",
     "package:win": "electron-builder --win --x64 --publish never",
+    "site:dev": "cd site && bun run dev",
+    "site:build": "cd site && bun run build",
     "typecheck": "tsc --noEmit",
     "generate-icons": "bun run scripts/generate_icons.ts",
     "test": "bun test"
