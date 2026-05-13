@@ -1,0 +1,44 @@
+name: Build Tauri (macOS)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install JS dependencies
+        run: bun install
+
+      - name: Build
+        # APPLE_SIGNING_IDENTITY=- disables codesigning for unsigned experimental builds.
+        # For distribution, configure APPLE_CERTIFICATE / APPLE_CERTIFICATE_PASSWORD secrets
+        # and set ENABLE_CODE_SIGNING=true in the Tauri bundle config.
+        env:
+          APPLE_SIGNING_IDENTITY: "-"
+        run: bun run tauri:build
+
+      - name: Upload dmg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirror-macos-dmg
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: warn
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirror-macos-app
+          path: src-tauri/target/release/bundle/macos/*.app
+          if-no-files-found: warn
