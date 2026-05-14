@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 export interface NativeAPI {
   isNative: boolean;
@@ -54,7 +53,7 @@ function createTauriAPI(): NativeAPI {
     },
 
     close() {
-      void getCurrentWebviewWindow().close();
+      void invoke('close_window');
     },
 
     async saveProjectToPath(path, content) {

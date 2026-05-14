@@ -1,5 +1,5 @@
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 pub struct AppState {
     pub is_dirty: Mutex<bool>,
@@ -9,6 +9,14 @@ pub struct AppState {
 #[tauri::command]
 fn set_dirty(state: State<'_, AppState>, is_dirty: bool) {
     *state.is_dirty.lock().unwrap() = is_dirty;
+}
+
+#[tauri::command]
+fn close_window(app: AppHandle) -> Result<(), String> {
+    app.get_webview_window("main")
+        .ok_or_else(|| "main window not found".to_string())?
+        .close()
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -144,6 +152,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             set_dirty,
+            close_window,
             confirm_close,
             toggle_fullscreen,
             list_directory,
