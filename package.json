@@ -20,7 +20,7 @@
     "package:mac": "electron-builder --mac --x64 --dir --publish never",
     "package:win": "electron-builder --win --x64 --publish never",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
+    "tauri:build": "APPIMAGE_EXTRACT_AND_RUN=1 tauri build",
     "site:dev": "cd site && bun run dev",
     "site:build": "cd site && bun run build",
     "typecheck": "tsc --noEmit",
@@ -57,7 +57,9 @@
       "output": "release"
     },
     "compression": "normal",
-    "electronLanguages": ["en-GB"],
+    "electronLanguages": [
+      "en-GB"
+    ],
     "afterPack": "scripts/afterPack.cjs",
     "files": [
       "dist/**/*",
