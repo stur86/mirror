@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatShortcut } from '../contexts/KeyboardShortcutsContext';
+import { nativeAPI } from '../platform';
 import {
   Navbar,
   NavbarGroup,
@@ -27,9 +28,6 @@ interface MenuBarProps {
   onPreferences: () => void;
 }
 
-// Check if running in Electron
-const isElectron = typeof window !== 'undefined' && window.electronAPI?.isElectron;
-
 export function MenuBar({
   onThemeToggle,
   isDark,
@@ -46,16 +44,10 @@ export function MenuBar({
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    if (!isElectron) return;
-    const unsub = window.electronAPI!.onFullscreenChange(setIsFullscreen);
+    if (!nativeAPI) return;
+    const unsub = nativeAPI.onFullscreenChange(setIsFullscreen);
     return unsub;
   }, []);
-
-  const handleExit = () => {
-    if (isElectron) {
-      window.close();
-    }
-  };
 
   const ShortcutLabel = ({ label }: { label: string }) => (
     <span style={{ opacity: 0.5, fontSize: '0.85em' }}>{label}</span>
@@ -98,10 +90,10 @@ export function MenuBar({
       />
       <MenuDivider />
       <MenuItem text={t('menu.preferences')} icon="cog" onClick={onPreferences} />
-      {isElectron && (
+      {nativeAPI && (
         <>
           <MenuDivider />
-          <MenuItem text={t('menu.exit')} icon="log-out" onClick={handleExit} />
+          <MenuItem text={t('menu.exit')} icon="log-out" onClick={() => nativeAPI!.close()} />
         </>
       )}
     </Menu>
@@ -113,9 +105,15 @@ export function MenuBar({
     </Menu>
   );
 
+  const handleDragMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest('button, a, input, [role="button"], [role="menuitem"]')) return;
+    nativeAPI?.startDragging();
+  };
+
   return (
     <>
-      <Navbar className="menu-bar">
+      <Navbar className="menu-bar" onMouseDown={handleDragMouseDown}>
         <NavbarGroup align={Alignment.START}>
           <NavbarHeading>{t('app.name')}</NavbarHeading>
           <NavbarDivider />
@@ -145,20 +143,20 @@ export function MenuBar({
             onClick={onThemeToggle}
             aria-label={isDark ? t('settings.light') : t('settings.dark')}
           />
-          {isElectron && (
+          {nativeAPI && (
             <>
               <Button
                 variant="minimal"
                 icon={isFullscreen ? 'minimize' : 'maximize'}
                 aria-label={isFullscreen ? t('actions.exitFullscreen') : t('actions.fullscreen')}
-                onClick={() => window.electronAPI!.toggleFullscreen()}
+                onClick={() => nativeAPI!.toggleFullscreen()}
                 style={{ marginLeft: 4 }}
               />
               <Button
                 variant="minimal"
                 icon="cross"
                 aria-label={t('actions.close')}
-                onClick={() => window.close()}
+                onClick={() => nativeAPI!.close()}
                 style={{ marginLeft: 4 }}
               />
             </>

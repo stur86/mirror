@@ -15,11 +15,9 @@ import { docxToMarkdown } from './utils/docxConvert';
 import { useShortcut, shortcutChord } from './contexts/KeyboardShortcutsContext';
 import { useTranslation } from 'react-i18next';
 import { useToast } from './contexts/ToastContext';
+import { nativeAPI } from './platform';
 
 const turndown = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-' });
-
-// window.electronAPI is injected synchronously by Electron's preload script via contextBridge.
-const isElectron = typeof window !== 'undefined' && !!window.electronAPI?.isElectron;
 
 interface MirrorProject {
   version: number;
@@ -110,14 +108,14 @@ export function App() {
     setHasUnsavedChanges(true);
   }, [sourceContent, translationContent, sourceLanguage, translationLanguage]);
 
-  // Keep Electron main process in sync with dirty state
+  // Keep native shell in sync with dirty state
   useEffect(() => {
-    window.electronAPI?.setDirty(hasUnsavedChanges);
+    nativeAPI?.setDirty(hasUnsavedChanges);
   }, [hasUnsavedChanges]);
 
   // Web: show browser's native "unsaved changes" prompt on tab close / navigation
   useEffect(() => {
-    if (isElectron) return;
+    if (nativeAPI) return;
     const handler = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) e.preventDefault();
     };
@@ -125,10 +123,10 @@ export function App() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsavedChanges]);
 
-  // Electron: listen for close-requested from main (fired when dirty + user closes window)
+  // Native: listen for close-requested from shell (fired when dirty + user closes window)
   useEffect(() => {
-    if (!isElectron) return;
-    const unsub = window.electronAPI!.onCloseRequested(() => setCloseDialogOpen(true));
+    if (!nativeAPI) return;
+    const unsub = nativeAPI.onCloseRequested(() => setCloseDialogOpen(true));
     return unsub;
   }, []);
 
@@ -144,7 +142,7 @@ export function App() {
   }, []);
 
   const handleOpenProject = useCallback(async () => {
-    if (isElectron) {
+    if (nativeAPI) {
       showFileBrowser(
         {
           mode: 'open',
@@ -208,7 +206,7 @@ export function App() {
   }, [showFileBrowser]);
 
   const handleLoadText = useCallback(async () => {
-    if (isElectron) {
+    if (nativeAPI) {
       showFileBrowser(
         {
           mode: 'open',
@@ -300,7 +298,7 @@ export function App() {
   }, [sourceContent, translationContent, sourceLanguage, translationLanguage]);
 
   const handleSaveProjectAs = useCallback(async (): Promise<boolean> => {
-    if (isElectron) {
+    if (nativeAPI) {
       return new Promise((resolve) => {
         showFileBrowser(
           { mode: 'save', title: 'Save Project', suggestedName: 'project.mirror.json' },
@@ -343,7 +341,7 @@ export function App() {
   handleSaveProjectRef.current = handleSaveProject;
 
   const handleExportTranslation = useCallback(() => {
-    if (isElectron) {
+    if (nativeAPI) {
       showFileBrowser(
         { mode: 'save', title: 'Export Translation', suggestedName: 'translation.md' },
         async (result) => {
@@ -366,18 +364,17 @@ export function App() {
     return () => clearInterval(id);
   }, [autosaveEnabled, autosaveIntervalMinutes]);
 
-  // Close dialog handlers (Electron only)
   const handleCloseDialogSave = useCallback(async () => {
     const saved = await handleSaveProject();
     if (saved) {
       setCloseDialogOpen(false);
-      window.electronAPI?.confirmClose();
+      nativeAPI?.confirmClose();
     }
   }, [handleSaveProject]);
 
   const handleCloseDialogDiscard = useCallback(() => {
     setCloseDialogOpen(false);
-    window.electronAPI?.confirmClose();
+    nativeAPI?.confirmClose();
   }, []);
 
   const handlePreferencesChange = useCallback(

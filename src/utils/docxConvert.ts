@@ -1,4 +1,3 @@
-import mammoth from 'mammoth';
 import TurndownService from 'turndown';
 
 const turndown = new TurndownService({
@@ -12,6 +11,7 @@ export function htmlToMarkdown(html: string): string {
 }
 
 export async function docxToMarkdown(buffer: ArrayBuffer): Promise<string> {
+  const { default: mammoth } = await import('mammoth');
   const result = await mammoth.convertToHtml(
     { arrayBuffer: buffer },
     {

@@ -1,6 +1,8 @@
+import { nativeAPI } from '../platform';
+
 /**
  * File I/O utilities using browser APIs.
- * Works in both web and Electron contexts.
+ * Works in web, Electron, and Tauri contexts.
  */
 
 export function readFileAsText(
@@ -142,14 +144,14 @@ export async function saveFileWithPicker(
 }
 
 /**
- * Writes content to an existing handle (FileSystemFileHandle) or path string (Electrobun).
+ * Writes content to an existing handle (FileSystemFileHandle) or path string (native builds).
  */
 export async function saveFileToHandle(
   handle: FileSystemFileHandle | string,
   content: string,
 ): Promise<void> {
   if (typeof handle === 'string') {
-    await window.electronAPI!.saveProjectToPath(handle, content);
+    await nativeAPI!.saveProjectToPath(handle, content);
     return;
   }
   const writable = await handle.createWritable();

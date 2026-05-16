@@ -42,6 +42,17 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 750,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('@blueprintjs')) return 'vendor-blueprint';
+          if (id.includes('@tiptap') || id.includes('tiptap-markdown')) return 'vendor-tiptap';
+          if (id.includes('react-dom') || id.includes('react/')) return 'vendor-react';
+        },
+      },
+    },
   },
   server: {
     port: 5173,

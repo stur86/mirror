@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Dialog, Breadcrumbs, InputGroup, HTMLSelect, Button, Spinner } from './index';
+import { nativeAPI } from '../platform';
 import './FileBrowserDialog.css';
 
 export interface FileFilter {
@@ -82,7 +83,7 @@ export function FileBrowserDialog({
   const navigateTo = useCallback(async (path: string) => {
     setIsLoading(true);
     setListError(null);
-    const result = await window.electronAPI!.listDirectory(path);
+    const result = await nativeAPI!.listDirectory(path);
     setIsLoading(false);
     if ('error' in result) {
       setListError(result.error);
@@ -107,10 +108,10 @@ export function FileBrowserDialog({
     setEntries([]);
     setIsLoading(true);
 
-    window.electronAPI!.getStandardPaths().then((paths) => {
+    nativeAPI!.getStandardPaths().then((paths) => {
       setStandardPaths(paths);
       // Fire listDirectory immediately after home is known
-      window.electronAPI!.listDirectory(paths.home).then((result) => {
+      nativeAPI!.listDirectory(paths.home).then((result) => {
         setIsLoading(false);
         if ('error' in result) {
           navigateTo('/'); // fallback to root
@@ -136,7 +137,7 @@ export function FileBrowserDialog({
     }
 
     // open mode: read file via RPC
-    const result = await window.electronAPI!.readFile(fullPath);
+    const result = await nativeAPI!.readFile(fullPath);
     setIsConfirming(false);
     if ('error' in result) {
       setConfirmError(result.error);
@@ -149,7 +150,7 @@ export function FileBrowserDialog({
   const handleCreateFolder = useCallback(async () => {
     if (!newFolderName.trim()) return;
     const newPath = joinPath(currentPath, newFolderName.trim());
-    const result = await window.electronAPI!.createDirectory(newPath);
+    const result = await nativeAPI!.createDirectory(newPath);
     if (!result.ok) {
       setNewFolderError('Could not create folder.');
       return;
@@ -158,7 +159,7 @@ export function FileBrowserDialog({
     setNewFolderName('');
     setNewFolderError(null);
     // Refresh listing
-    const refreshed = await window.electronAPI!.listDirectory(currentPath);
+    const refreshed = await nativeAPI!.listDirectory(currentPath);
     if (!('error' in refreshed)) {
       setEntries(refreshed.entries);
     }
