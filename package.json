@@ -1,6 +1,6 @@
 {
   "name": "mirror",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "AI-assisted translation editor",
   "main": "electron-dist/main.js",
   "author": {
