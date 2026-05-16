@@ -46,3 +46,6 @@ assets/icon.iconset/
 # Site build output
 site/_site
 site/node_modules
+
+# Generated Tauri icons
+src-tauri/icons/

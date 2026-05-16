@@ -28,12 +28,11 @@
     "active": true,
     "targets": "all",
     "icon": [
-      "../assets/icon32.png",
-      "../assets/icon128.png",
-      "../assets/icon256.png",
-      "../assets/icon512.png",
-      "../assets/icon1024.png",
-      "../assets/icon.ico"
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
     ],
     "linux": {
       "deb": {

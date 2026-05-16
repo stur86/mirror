@@ -2,10 +2,13 @@ name: Build Tauri (Linux)
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -39,16 +42,22 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: bun run tauri:build
 
-      - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mirror-linux-appimage
-          path: src-tauri/target/release/bundle/appimage/*.AppImage
-          if-no-files-found: warn
+      - name: Get version tag
+        id: version
+        run: echo "tag=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
-      - name: Upload deb artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mirror-linux-deb
-          path: src-tauri/target/release/bundle/deb/*.deb
-          if-no-files-found: warn
+      - name: Publish to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          gh release view "$TAG" > /dev/null 2>&1 || \
+            gh release create "$TAG" --title "$TAG" --prerelease --notes ""
+
+          APPIMAGE=$(ls src-tauri/target/release/bundle/appimage/*.AppImage | head -1)
+          cp "$APPIMAGE" "mirror-${TAG}-linux-tauri.AppImage"
+          gh release upload "$TAG" "mirror-${TAG}-linux-tauri.AppImage" --clobber
+
+          DEB=$(ls src-tauri/target/release/bundle/deb/*.deb | head -1)
+          cp "$DEB" "mirror-${TAG}-linux-tauri.deb"
+          gh release upload "$TAG" "mirror-${TAG}-linux-tauri.deb" --clobber

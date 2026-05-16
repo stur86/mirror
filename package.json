@@ -19,6 +19,7 @@
     "package:linux": "electron-builder --linux --x64 --publish never",
     "package:mac": "electron-builder --mac --x64 --dir --publish never",
     "package:win": "electron-builder --win --x64 --publish never",
+    "tauri:icons": "tauri icon assets/icon1024.png",
     "tauri:dev": "tauri dev",
     "tauri:build": "APPIMAGE_EXTRACT_AND_RUN=1 tauri build",
     "site:dev": "cd site && bun run dev",

@@ -161,6 +161,13 @@
       gap: 14px;
     }
 
+    .download-options {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
     .btn-primary {
       display: inline-flex;
       align-items: center;
@@ -184,6 +191,16 @@
     .btn-primary .btn-arrow {
       font-size: 16px;
       line-height: 1;
+    }
+
+    .btn-primary--outline {
+      background: transparent;
+      color: var(--plum-mid);
+      border: 2px solid var(--plum-mid);
+    }
+    .btn-primary--outline:hover {
+      background: var(--plum-mid);
+      color: var(--cream);
     }
 
     .other-platforms {
@@ -409,9 +426,11 @@
       <p class="hero-desc">{{ hero.description }}</p>
 
       <div class="download-area">
-        <a href="https://github.com/{{ release.githubRepo }}/releases" class="btn-primary" id="btn-primary">
-          <span class="btn-arrow">↓</span> Download
-        </a>
+        <div class="download-options" id="download-options">
+          <a href="https://github.com/{{ release.githubRepo }}/releases" class="btn-primary">
+            <span class="btn-arrow">↓</span> Download
+          </a>
+        </div>
         <div class="other-platforms" id="other-platforms"></div>
         <a href="https://github.com/{{ release.githubRepo }}/releases/tag/{{ release.tag }}" class="release-link">
           All files for {{ release.tag }} →
@@ -458,9 +477,21 @@
       var base = "https://github.com/" + repo + "/releases/download/" + tag + "/";
 
       var platforms = {
-        linux:   { label: "Linux",   suffix: "linux.zip" },
-        macos:   { label: "macOS",   suffix: "macos.zip" },
-        windows: { label: "Windows", suffix: "windows.zip" }
+        linux: {
+          label: "Linux",
+          tauri: "mirror-" + tag + "-linux-tauri.AppImage",
+          electron: "mirror-" + tag + "-linux.zip"
+        },
+        macos: {
+          label: "macOS",
+          tauri: "mirror-" + tag + "-macos-tauri.dmg",
+          electron: "mirror-" + tag + "-macos.zip"
+        },
+        windows: {
+          label: "Windows",
+          tauri: "mirror-" + tag + "-windows-tauri-setup.exe",
+          electron: "mirror-" + tag + "-windows.zip"
+        }
       };
 
       function detect() {
@@ -474,16 +505,27 @@
       var detected = detect();
       var primary = platforms[detected];
 
-      var btn = document.getElementById("btn-primary");
-      btn.href = base + "mirror-" + tag + "-" + primary.suffix;
-      btn.innerHTML = '<span class="btn-arrow">\u2193</span> Download for ' + primary.label;
+      var optionsEl = document.getElementById("download-options");
+      optionsEl.innerHTML = "";
+
+      var tauriA = document.createElement("a");
+      tauriA.href = base + primary.tauri;
+      tauriA.className = "btn-primary";
+      tauriA.innerHTML = '<span class="btn-arrow">\u2193</span> Download for ' + primary.label + ' (Tauri)';
+      optionsEl.appendChild(tauriA);
+
+      var electronA = document.createElement("a");
+      electronA.href = base + primary.electron;
+      electronA.className = "btn-primary btn-primary--outline";
+      electronA.innerHTML = '<span class="btn-arrow">\u2193</span> Download for ' + primary.label + ' (Electron)';
+      optionsEl.appendChild(electronA);
 
       var othersEl = document.getElementById("other-platforms");
       Object.keys(platforms).forEach(function (key) {
         if (key === detected) return;
         var p = platforms[key];
         var a = document.createElement("a");
-        a.href = base + "mirror-" + tag + "-" + p.suffix;
+        a.href = base + p.tauri;
         a.className = "btn-secondary";
         a.textContent = p.label;
         othersEl.appendChild(a);

@@ -18,3 +18,18 @@ jobs:
     uses: ./.github/workflows/build-windows.yml
     permissions:
       contents: write
+
+  tauri-linux:
+    uses: ./.github/workflows/tauri-build-linux.yml
+    permissions:
+      contents: write
+
+  tauri-macos:
+    uses: ./.github/workflows/tauri-build-macos.yml
+    permissions:
+      contents: write
+
+  tauri-windows:
+    uses: ./.github/workflows/tauri-build-windows.yml
+    permissions:
+      contents: write

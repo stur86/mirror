@@ -2,10 +2,13 @@ name: Build Tauri (Windows)
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -24,16 +27,20 @@ jobs:
       - name: Build
         run: bun run tauri:build
 
-      - name: Upload NSIS installer artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mirror-windows-nsis
-          path: src-tauri/target/release/bundle/nsis/*.exe
-          if-no-files-found: warn
+      - name: Get version tag
+        id: version
+        shell: bash
+        run: echo "tag=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
-      - name: Upload MSI artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mirror-windows-msi
-          path: src-tauri/target/release/bundle/msi/*.msi
-          if-no-files-found: warn
+      - name: Publish to GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          gh release view "$TAG" > /dev/null 2>&1 || \
+            gh release create "$TAG" --title "$TAG" --prerelease --notes ""
+
+          EXE=$(ls src-tauri/target/release/bundle/nsis/*.exe | head -1)
+          cp "$EXE" "mirror-${TAG}-windows-tauri-setup.exe"
+          gh release upload "$TAG" "mirror-${TAG}-windows-tauri-setup.exe" --clobber
