@@ -3,6 +3,10 @@ name: Build Tauri (macOS)
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      publish:
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -40,6 +44,7 @@ jobs:
         run: echo "tag=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Publish to GitHub Release
+        if: github.event_name == 'workflow_dispatch' || inputs.publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

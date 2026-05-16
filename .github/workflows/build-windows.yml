@@ -3,6 +3,10 @@ name: Build Electron release (Windows)
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      publish:
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -40,6 +44,7 @@ jobs:
         run: Compress-Archive -Path release/* -DestinationPath mirror-${{ steps.version.outputs.tag }}-windows.zip
 
       - name: Create or update GitHub Release
+        if: github.event_name == 'workflow_dispatch' || inputs.publish
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

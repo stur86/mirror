@@ -3,6 +3,10 @@ name: Build Tauri (Linux)
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      publish:
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -23,6 +27,9 @@ jobs:
 
       - name: Install JS dependencies
         run: bun install
+
+      - name: Generate icons
+        run: bun run tauri:icons
 
       - name: Install Linux system dependencies
         run: |
@@ -47,6 +54,7 @@ jobs:
         run: echo "tag=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Publish to GitHub Release
+        if: github.event_name == 'workflow_dispatch' || inputs.publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

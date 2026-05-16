@@ -3,6 +3,10 @@ name: Build Electron release (macOS)
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      publish:
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -42,6 +46,7 @@ jobs:
         run: zip -r mirror-${{ steps.version.outputs.tag }}-macos.zip release/
 
       - name: Create or update GitHub Release
+        if: github.event_name == 'workflow_dispatch' || inputs.publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
