@@ -1,8 +1,10 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 export interface NativeAPI {
   isNative: boolean;
+  startDragging(): void;
   setDirty(isDirty: boolean): void;
   onCloseRequested(cb: () => void): () => void;
   confirmClose(): void;
@@ -27,6 +29,10 @@ function isElectron(): boolean {
 function createTauriAPI(): NativeAPI {
   return {
     isNative: true,
+
+    startDragging() {
+      void getCurrentWindow().startDragging();
+    },
 
     setDirty(isDirty) {
       void invoke('set_dirty', { isDirty });
@@ -82,6 +88,7 @@ function createElectronAPI(): NativeAPI {
   const e = window.electronAPI!;
   return {
     isNative: true,
+    startDragging() {}, // Electron drag is handled via CSS -webkit-app-region
     setDirty: (isDirty) => e.setDirty(isDirty),
     onCloseRequested: (cb) => e.onCloseRequested(cb),
     confirmClose: () => e.confirmClose(),

@@ -105,9 +105,15 @@ export function MenuBar({
     </Menu>
   );
 
+  const handleDragMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest('button, a, input, [role="button"], [role="menuitem"]')) return;
+    nativeAPI?.startDragging();
+  };
+
   return (
     <>
-      <Navbar className="menu-bar" {...{ 'data-tauri-drag-region': '' }}>
+      <Navbar className="menu-bar" onMouseDown={handleDragMouseDown}>
         <NavbarGroup align={Alignment.START}>
           <NavbarHeading>{t('app.name')}</NavbarHeading>
           <NavbarDivider />
