@@ -13,6 +13,17 @@ jobs:
     runs-on: macos-latest
     permissions:
       contents: write
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            tauri_target: ""
+            bundle_subpath: release
+            release_suffix: macos-tauri-arm64
+          - arch: universal
+            tauri_target: universal-apple-darwin
+            bundle_subpath: universal-apple-darwin/release
+            release_suffix: macos-tauri-universal
 
     steps:
       - uses: actions/checkout@v4
@@ -28,16 +39,24 @@ jobs:
       - name: Install JS dependencies
         run: bun install
 
+      - name: Install extra Rust targets
+        if: matrix.tauri_target != ''
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+
       - name: Generate icons
         run: bun run tauri:icons
 
       - name: Build
-        # APPLE_SIGNING_IDENTITY=- disables codesigning for unsigned experimental builds.
-        # For distribution, configure APPLE_CERTIFICATE / APPLE_CERTIFICATE_PASSWORD secrets
-        # and set ENABLE_CODE_SIGNING=true in the Tauri bundle config.
         env:
           APPLE_SIGNING_IDENTITY: "-"
-        run: bun run tauri:build
+          MACOSX_DEPLOYMENT_TARGET: "12.0"
+          TAURI_TARGET: ${{ matrix.tauri_target }}
+        run: |
+          if [ -n "$TAURI_TARGET" ]; then
+            bun run tauri:build -- --target "$TAURI_TARGET"
+          else
+            bun run tauri:build
+          fi
 
       - name: Get version tag
         id: version
@@ -51,7 +70,6 @@ jobs:
           TAG="${{ steps.version.outputs.tag }}"
           gh release view "$TAG" > /dev/null 2>&1 || \
             gh release create "$TAG" --title "$TAG" --prerelease --notes ""
-
-          DMG=$(ls src-tauri/target/release/bundle/dmg/*.dmg | head -1)
-          cp "$DMG" "mirror-${TAG}-macos-tauri.dmg"
-          gh release upload "$TAG" "mirror-${TAG}-macos-tauri.dmg" --clobber
+          DMG=$(ls src-tauri/target/${{ matrix.bundle_subpath }}/bundle/dmg/*.dmg | head -1)
+          cp "$DMG" "mirror-${TAG}-${{ matrix.release_suffix }}.dmg"
+          gh release upload "$TAG" "mirror-${TAG}-${{ matrix.release_suffix }}.dmg" --clobber
