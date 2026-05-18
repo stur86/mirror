@@ -94,6 +94,7 @@ toast:
   lookupError: "Could not load dictionary entry"
   projectLoadError: "Failed to open project file"
   docxLoadError: "Failed to read DOCX file"
+  saveError: "Failed to save file"
 
 lookup:
   menuItem: "Look up: {{word}}"

@@ -28,18 +28,29 @@ interface Entry {
   isDirectory: boolean;
 }
 
-// ---- Path utilities (POSIX only — macOS/Linux) --------------------------------
+// ---- Path utilities (Windows and POSIX) ----------------------------------------
 
 function joinPath(dir: string, name: string): string {
-  return dir.endsWith('/') ? dir + name : `${dir}/${name}`;
+  if (dir.endsWith('/') || dir.endsWith('\\')) return dir + name;
+  const sep = dir.includes('\\') ? '\\' : '/';
+  return `${dir}${sep}${name}`;
 }
 
 function splitPath(p: string): string[] {
-  return p.split('/').filter(Boolean);
+  return p.split(/[/\\]/).filter(Boolean);
+}
+
+function isWindowsDrivePath(segments: string[]): boolean {
+  return segments.length > 0 && /^[A-Za-z]:$/.test(segments[0]);
 }
 
 function pathUpTo(segments: string[], upTo: number): string {
-  return '/' + segments.slice(0, upTo + 1).join('/');
+  const parts = segments.slice(0, upTo + 1);
+  if (isWindowsDrivePath(parts)) {
+    // "C:" alone → "C:\"; "C:", "Users" → "C:\Users"
+    return parts.length === 1 ? parts[0] + '\\' : parts.join('\\');
+  }
+  return '/' + parts.join('/');
 }
 
 // ---- Entry filtering ----------------------------------------------------------
@@ -192,7 +203,9 @@ export function FileBrowserDialog({
   ];
 
   const isActiveSidebar = (path: string) =>
-    currentPath === path || currentPath.startsWith(path + '/');
+    currentPath === path ||
+    currentPath.startsWith(path + '/') ||
+    currentPath.startsWith(path + '\\');
 
   return (
     <Dialog
@@ -351,7 +364,7 @@ export function FileBrowserDialog({
           />
         )}
         {confirmError && <span className="fb-confirm-error">{confirmError}</span>}
-        <Button intent="primary" disabled={!filename || isConfirming} onClick={handleConfirm}>
+        <Button intent="primary" disabled={!filename || isConfirming || isLoading} onClick={handleConfirm}>
           {mode === 'save' ? 'Save' : 'Open'}
         </Button>
         <Button onClick={onClose}>Cancel</Button>

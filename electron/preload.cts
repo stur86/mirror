@@ -47,6 +47,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readFile: (filePath: string) =>
     ipcRenderer.invoke('fs:read-file', filePath),
 
-  saveProjectToPath: (filePath: string, content: string) =>
-    ipcRenderer.invoke('fs:save-to-path', filePath, content).then(() => undefined),
+  saveProjectToPath: async (filePath: string, content: string) => {
+    const result = await ipcRenderer.invoke('fs:save-to-path', filePath, content);
+    if (result && 'error' in result) throw new Error(result.error);
+  },
 });

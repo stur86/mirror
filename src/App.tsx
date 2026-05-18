@@ -303,11 +303,16 @@ export function App() {
         showFileBrowser(
           { mode: 'save', title: 'Save Project', suggestedName: 'project.mirror.json' },
           async (result) => {
-            await saveFileToHandle(result.path, buildProjectJson());
-            projectFileHandleRef.current = result.path;
-            setHasUnsavedChanges(false);
-            setLastSavedAt(new Date());
-            resolve(true);
+            try {
+              await saveFileToHandle(result.path, buildProjectJson());
+              projectFileHandleRef.current = result.path;
+              setHasUnsavedChanges(false);
+              setLastSavedAt(new Date());
+              resolve(true);
+            } catch (e) {
+              showToast(`${t('toast.saveError')}: ${String(e)}`, Intent.DANGER);
+              resolve(false);
+            }
           },
           () => resolve(false),
         );
@@ -345,7 +350,11 @@ export function App() {
       showFileBrowser(
         { mode: 'save', title: 'Export Translation', suggestedName: 'translation.md' },
         async (result) => {
-          await saveFileToHandle(result.path, translationContent);
+          try {
+            await saveFileToHandle(result.path, translationContent);
+          } catch (e) {
+            showToast(`${t('toast.saveError')}: ${String(e)}`, Intent.DANGER);
+          }
         },
       );
       return;
