@@ -19,6 +19,13 @@ import { nativeAPI } from './platform';
 
 const turndown = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-' });
 
+function dirOf(path: string): string {
+  const idx = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  return idx > 0 ? path.slice(0, idx) : path;
+}
+
+const LAST_SAVE_DIR_KEY = 'mirror.lastSaveDir';
+
 interface MirrorProject {
   version: number;
   sourceContent: string;
@@ -58,13 +65,14 @@ export function App() {
     title: string;
     suggestedName?: string;
     filters?: FileFilter[];
+    defaultPath?: string;
   } | null>(null);
   const fileBrowserCallbackRef = useRef<((result: FileBrowserResult) => void) | null>(null);
   const fileBrowserCancelRef = useRef<(() => void) | null>(null);
 
   const showFileBrowser = useCallback(
     (
-      config: { mode: 'save' | 'open'; title: string; suggestedName?: string; filters?: FileFilter[] },
+      config: { mode: 'save' | 'open'; title: string; suggestedName?: string; filters?: FileFilter[]; defaultPath?: string },
       onResult: (result: FileBrowserResult) => void,
       onCancel?: () => void,
     ) => {
@@ -301,11 +309,18 @@ export function App() {
     if (nativeAPI) {
       return new Promise((resolve) => {
         showFileBrowser(
-          { mode: 'save', title: 'Save Project', suggestedName: 'project.mirror.json' },
+          {
+            mode: 'save',
+            title: 'Save Project',
+            suggestedName: 'project.mirror.json',
+            filters: [{ label: 'Mirror Project', extensions: ['.mirror.json'] }],
+            defaultPath: localStorage.getItem(LAST_SAVE_DIR_KEY) ?? undefined,
+          },
           async (result) => {
             try {
               await saveFileToHandle(result.path, buildProjectJson());
               projectFileHandleRef.current = result.path;
+              localStorage.setItem(LAST_SAVE_DIR_KEY, dirOf(result.path));
               setHasUnsavedChanges(false);
               setLastSavedAt(new Date());
               resolve(true);
@@ -348,10 +363,17 @@ export function App() {
   const handleExportTranslation = useCallback(() => {
     if (nativeAPI) {
       showFileBrowser(
-        { mode: 'save', title: 'Export Translation', suggestedName: 'translation.md' },
+        {
+          mode: 'save',
+          title: 'Export Translation',
+          suggestedName: 'translation.md',
+          filters: [{ label: 'Markdown', extensions: ['.md'] }],
+          defaultPath: localStorage.getItem(LAST_SAVE_DIR_KEY) ?? undefined,
+        },
         async (result) => {
           try {
             await saveFileToHandle(result.path, translationContent);
+            localStorage.setItem(LAST_SAVE_DIR_KEY, dirOf(result.path));
           } catch (e) {
             showToast(`${t('toast.saveError')}: ${String(e)}`, Intent.DANGER);
           }
@@ -472,6 +494,7 @@ export function App() {
         title={fileBrowser?.title ?? ''}
         suggestedName={fileBrowser?.suggestedName}
         filters={fileBrowser?.filters}
+        defaultPath={fileBrowser?.defaultPath}
         onConfirm={(result) => {
           setFileBrowser(null);
           fileBrowserCallbackRef.current?.(result);
