@@ -11,8 +11,8 @@ footer:
     url: https://github.com/stur86
     url_label: github.com/stur86
   credits:
-    - name: Electron
-      url: https://www.electronjs.org
+    - name: Tauri
+      url: https://tauri.app
     - name: React
       url: https://react.dev
     - name: Tiptap
