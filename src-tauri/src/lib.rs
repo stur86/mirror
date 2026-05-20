@@ -126,7 +126,7 @@ fn read_file(file_path: String) -> ReadResult {
 }
 
 #[tauri::command]
-fn save_to_path(file_path: String, content: String) -> Result<(), String> {
+fn save_text_file_at(file_path: String, content: String) -> Result<(), String> {
     std::fs::write(&file_path, content.as_bytes()).map_err(|e| e.to_string())
 }
 
@@ -159,7 +159,7 @@ pub fn run() {
             get_standard_paths,
             create_directory,
             read_file,
-            save_to_path,
+            save_text_file_at,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -41,7 +41,7 @@ function splitPath(p: string): string[] {
 }
 
 function isWindowsDrivePath(segments: string[]): boolean {
-  return segments.length > 0 && /^[A-Za-z]:$/.test(segments[0]);
+  return segments.length > 0 && /^[A-Za-z]:$/.test(segments[0]!);
 }
 
 function pathUpTo(segments: string[], upTo: number): string {
@@ -364,7 +364,7 @@ export function FileBrowserDialog({
           />
         )}
         {confirmError && <span className="fb-confirm-error">{confirmError}</span>}
-        <Button intent="primary" disabled={!filename || isConfirming || isLoading} onClick={handleConfirm}>
+        <Button intent="primary" disabled={!filename || isConfirming || isLoading} onClick={() => handleConfirm()}>
           {mode === 'save' ? 'Save' : 'Open'}
         </Button>
         <Button onClick={onClose}>Cancel</Button>

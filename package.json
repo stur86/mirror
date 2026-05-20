@@ -2,7 +2,6 @@
   "name": "mirror",
   "version": "0.2.2",
   "description": "AI-assisted translation editor",
-  "main": "electron-dist/main.js",
   "author": {
     "name": "Simone Sturniolo",
     "email": "simonesturniolo@gmail.com"
@@ -13,12 +12,6 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "electron:compile": "npx tsc -p tsconfig.electron.json",
-    "electron:dev": "bun run electron:compile && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "bun run build && bun run electron:compile && electron-builder",
-    "package:linux": "electron-builder --linux --x64 --publish never",
-    "package:mac": "electron-builder --mac --x64 --dir --publish never",
-    "package:win": "electron-builder --win --x64 --publish never",
     "tauri:icons": "tauri icon assets/icon1024.png",
     "tauri:dev": "tauri dev",
     "tauri:build": "APPIMAGE_EXTRACT_AND_RUN=1 tauri build",
@@ -26,68 +19,22 @@
     "site:build": "cd site && bun run build",
     "typecheck": "tsc --noEmit",
     "generate-icons": "bun run scripts/generate_icons.ts",
+    "postversion": "bun run scripts/sync-cargo-version.ts",
     "test": "bun test"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.1",
     "@types/bun": "latest",
-    "@types/electron": "latest",
     "@types/node": "latest",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/turndown": "^5.0.6",
     "@vitejs/plugin-react": "^5.2.0",
-    "concurrently": "^9.2.1",
-    "electron": "^40.1.0",
-    "electron-builder": "^26.0.0",
     "png-to-ico": "^3.0.1",
     "sass": "^1.98.0",
     "sharp": "^0.34.5",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1",
-    "vite-plugin-node-polyfills": "^0.25.0",
-    "wait-on": "^9.0.4"
-  },
-  "overrides": {
-    "yallist": "^4.0.0"
-  },
-  "build": {
-    "appId": "com.mirror.app",
-    "productName": "Mirror",
-    "directories": {
-      "output": "release"
-    },
-    "compression": "normal",
-    "electronLanguages": [
-      "en-GB"
-    ],
-    "afterPack": "scripts/afterPack.cjs",
-    "files": [
-      "dist/**/*",
-      "electron-dist/**/*"
-    ],
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "icon": "assets/icon256.png",
-      "category": "Office"
-    },
-    "mac": {
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "icon": "assets/icon1024.png"
-    },
-    "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ],
-      "icon": "assets/icon.ico"
-    }
+    "vite": "^7.3.1"
   },
   "dependencies": {
     "@blueprintjs/core": "^6.11.1",
