@@ -19,6 +19,7 @@ interface FileBrowserDialogProps {
   title: string;
   suggestedName?: string;
   filters?: FileFilter[];
+  defaultPath?: string;
   onConfirm: (result: FileBrowserResult) => void;
   onClose: () => void;
 }
@@ -28,18 +29,28 @@ interface Entry {
   isDirectory: boolean;
 }
 
-// ---- Path utilities (POSIX only — macOS/Linux) --------------------------------
+// ---- Path utilities (Windows and POSIX) ----------------------------------------
 
 function joinPath(dir: string, name: string): string {
-  return dir.endsWith('/') ? dir + name : `${dir}/${name}`;
+  if (dir.endsWith('/') || dir.endsWith('\\')) return dir + name;
+  const sep = dir.includes('\\') ? '\\' : '/';
+  return `${dir}${sep}${name}`;
 }
 
 function splitPath(p: string): string[] {
-  return p.split('/').filter(Boolean);
+  return p.split(/[/\\]/).filter(Boolean);
+}
+
+function isWindowsDrivePath(segments: string[]): boolean {
+  return segments.length > 0 && /^[A-Za-z]:$/.test(segments[0]!);
 }
 
 function pathUpTo(segments: string[], upTo: number): string {
-  return '/' + segments.slice(0, upTo + 1).join('/');
+  const parts = segments.slice(0, upTo + 1);
+  if (isWindowsDrivePath(parts)) {
+    return parts.length === 1 ? parts[0]! + '\\' : parts.join('\\');
+  }
+  return '/' + parts.join('/');
 }
 
 // ---- Entry filtering ----------------------------------------------------------
@@ -51,6 +62,52 @@ function applyFilter(entries: Entry[], extensions: string[] | null): Entry[] {
   );
 }
 
+// ---- Filter helpers -----------------------------------------------------------
+
+// Sentinel label for the synthetic "All supported" option.
+const ALL_SUPPORTED_LABEL = '__all_supported__';
+
+function buildAllSupportedFilter(filters: FileFilter[]): FileFilter {
+  const exts = [...new Set(filters.flatMap((f) => f.extensions))];
+  return { label: ALL_SUPPORTED_LABEL, extensions: exts };
+}
+
+function filterDropdownLabel(filter: FileFilter): string {
+  if (filter.label === ALL_SUPPORTED_LABEL) return 'All supported';
+  const shown = filter.extensions.slice(0, 2).map((e) => `*${e}`).join(', ');
+  const more = filter.extensions.length > 2 ? ', …' : '';
+  return `${filter.label} (${shown}${more})`;
+}
+
+// Strip the first matching known extension from a filename.
+function stripKnownExtension(name: string, allFilters: FileFilter[]): string {
+  const lower = name.toLowerCase();
+  for (const f of allFilters) {
+    for (const ext of f.extensions) {
+      if (lower.endsWith(ext.toLowerCase())) {
+        return name.slice(0, -ext.length);
+      }
+    }
+  }
+  return name;
+}
+
+// Return filename with the given filter's primary extension applied.
+function applyExtension(filename: string, filter: FileFilter, allFilters: FileFilter[]): string {
+  const ext = filter.extensions[0];
+  if (!ext) return filename;
+  const base = stripKnownExtension(filename, allFilters);
+  return base.toLowerCase().endsWith(ext.toLowerCase()) ? base : base + ext;
+}
+
+// Compute the default selected filter for a given mode + filter list.
+function defaultFilter(mode: 'save' | 'open', filters: FileFilter[] | undefined): FileFilter | null {
+  if (!filters || filters.length === 0) return null;
+  // Open mode with multiple groups: default to "All supported"
+  if (mode === 'open' && filters.length > 1) return buildAllSupportedFilter(filters);
+  return filters[0] ?? null;
+}
+
 // ---- Component ---------------------------------------------------------------
 
 export function FileBrowserDialog({
@@ -59,6 +116,7 @@ export function FileBrowserDialog({
   title,
   suggestedName,
   filters,
+  defaultPath,
   onConfirm,
   onClose,
 }: FileBrowserDialogProps) {
@@ -71,7 +129,9 @@ export function FileBrowserDialog({
     downloads: string;
   } | null>(null);
   const [filename, setFilename] = useState(suggestedName ?? '');
-  const [selectedFilter, setSelectedFilter] = useState<FileFilter | null>(filters?.[0] ?? null);
+  const [selectedFilter, setSelectedFilter] = useState<FileFilter | null>(() =>
+    defaultFilter(mode, filters),
+  );
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderError, setNewFolderError] = useState<string | null>(null);
@@ -87,19 +147,22 @@ export function FileBrowserDialog({
     setIsLoading(false);
     if ('error' in result) {
       setListError(result.error);
-      return; // currentPath unchanged — user can still navigate via breadcrumb/sidebar
+      return;
     }
     setCurrentPath(path);
     setEntries(result.entries);
   }, []);
 
-  // On dialog open: fetch standard paths, then immediately list the home directory.
-  // getStandardPaths must complete first to know the home path — but listDirectory
-  // is fired as soon as home is known (no extra await between them).
   useEffect(() => {
     if (!isOpen) return;
-    setFilename(suggestedName ?? '');
-    setSelectedFilter(filters?.[0] ?? null);
+    const df = defaultFilter(mode, filters);
+    // In save mode, apply the default filter's extension to the suggested name.
+    const initName =
+      mode === 'save' && df && df.label !== ALL_SUPPORTED_LABEL
+        ? applyExtension(suggestedName ?? '', df, filters ?? [])
+        : (suggestedName ?? '');
+    setFilename(initName);
+    setSelectedFilter(df);
     setIsCreatingFolder(false);
     setNewFolderName('');
     setNewFolderError(null);
@@ -110,33 +173,59 @@ export function FileBrowserDialog({
 
     nativeAPI!.getStandardPaths().then((paths) => {
       setStandardPaths(paths);
-      // Fire listDirectory immediately after home is known
-      nativeAPI!.listDirectory(paths.home).then((result) => {
+      const startDir = defaultPath ?? paths.home;
+      nativeAPI!.listDirectory(startDir).then((result) => {
         setIsLoading(false);
         if ('error' in result) {
-          navigateTo('/'); // fallback to root
+          navigateTo(paths.home);
         } else {
-          setCurrentPath(paths.home);
+          setCurrentPath(startDir);
           setEntries(result.entries);
         }
       });
     });
   }, [isOpen, navigateTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleFilterChange = useCallback((value: string) => {
+    if (value === '__all__') {
+      setSelectedFilter(null);
+      // In open mode, clear the selected filename when switching filters.
+      if (mode === 'open') setFilename('');
+    } else if (value === ALL_SUPPORTED_LABEL) {
+      setSelectedFilter(buildAllSupportedFilter(filters ?? []));
+      if (mode === 'open') setFilename('');
+    } else {
+      const f = filters?.find((f) => f.label === value) ?? null;
+      setSelectedFilter(f);
+      if (mode === 'save' && f) {
+        setFilename((prev) => applyExtension(prev, f, filters ?? []));
+      }
+      if (mode === 'open') setFilename('');
+    }
+  }, [mode, filters]);
+
   const handleConfirm = useCallback(async (overridePath?: string) => {
-    const fullPath = overridePath ?? joinPath(currentPath, filename);
-    const resolvedFilename = fullPath.split('/').pop() ?? '';
+    let fullPath = overridePath ?? joinPath(currentPath, filename);
+    const resolvedFilename = fullPath.split(/[/\\]/).pop() ?? '';
     if (!resolvedFilename || isConfirming) return;
     setConfirmError(null);
     setIsConfirming(true);
 
     if (mode === 'save') {
+      // Enforce extension for specific (non-"All files") filters.
+      if (selectedFilter && selectedFilter.label !== ALL_SUPPORTED_LABEL) {
+        const lower = fullPath.toLowerCase();
+        const hasExt = selectedFilter.extensions.some((e) => lower.endsWith(e.toLowerCase()));
+        if (!hasExt && selectedFilter.extensions[0]) {
+          fullPath = fullPath + selectedFilter.extensions[0];
+        }
+      }
       onConfirm({ path: fullPath });
       setIsConfirming(false);
       return;
     }
 
-    // open mode: read file via RPC
+    // open mode: read file via Rust
     const result = await nativeAPI!.readFile(fullPath);
     setIsConfirming(false);
     if ('error' in result) {
@@ -145,7 +234,7 @@ export function FileBrowserDialog({
     }
     const bytes = Uint8Array.from(atob(result.base64), (c) => c.charCodeAt(0));
     onConfirm({ path: fullPath, buffer: bytes.buffer });
-  }, [filename, currentPath, mode, onConfirm, isConfirming]);
+  }, [filename, currentPath, mode, selectedFilter, onConfirm, isConfirming]);
 
   const handleCreateFolder = useCallback(async () => {
     if (!newFolderName.trim()) return;
@@ -158,7 +247,6 @@ export function FileBrowserDialog({
     setIsCreatingFolder(false);
     setNewFolderName('');
     setNewFolderError(null);
-    // Refresh listing
     const refreshed = await nativeAPI!.listDirectory(currentPath);
     if (!('error' in refreshed)) {
       setEntries(refreshed.entries);
@@ -171,12 +259,11 @@ export function FileBrowserDialog({
     setNewFolderError(null);
   }, []);
 
-  // Filter entries: open mode uses active filter; save mode shows all (files dimmed)
-  const activeExtensions =
-    mode === 'open' && selectedFilter ? selectedFilter.extensions : null;
+  // Active extensions for file-list filtering.
+  const activeExtensions = mode === 'open' && selectedFilter ? selectedFilter.extensions : null;
   const visibleEntries = applyFilter(entries, activeExtensions);
 
-  // Breadcrumb items derived from currentPath
+  // Breadcrumbs
   const segments = splitPath(currentPath);
   const breadcrumbItems = [
     {
@@ -185,14 +272,33 @@ export function FileBrowserDialog({
     },
     ...segments.map((seg, i) => ({
       text: seg,
-      // Last segment is the current dir — no click needed
-      onClick:
-        i < segments.length - 1 ? () => navigateTo(pathUpTo(segments, i)) : undefined,
+      onClick: i < segments.length - 1 ? () => navigateTo(pathUpTo(segments, i)) : undefined,
     })),
   ];
 
   const isActiveSidebar = (path: string) =>
-    currentPath === path || currentPath.startsWith(path + '/');
+    currentPath === path ||
+    currentPath.startsWith(path + '/') ||
+    currentPath.startsWith(path + '\\');
+
+  // Build dropdown options.
+  const filterOptions: Array<{ label: string; value: string }> = [];
+  if (filters && filters.length > 0) {
+    if (mode === 'open' && filters.length > 1) {
+      filterOptions.push({ label: 'All supported', value: ALL_SUPPORTED_LABEL });
+    }
+    for (const f of filters) {
+      filterOptions.push({ label: filterDropdownLabel(f), value: f.label });
+    }
+  }
+  filterOptions.push({ label: 'All files (*)', value: '__all__' });
+
+  const filterValue =
+    selectedFilter === null
+      ? '__all__'
+      : selectedFilter.label === ALL_SUPPORTED_LABEL
+      ? ALL_SUPPORTED_LABEL
+      : selectedFilter.label;
 
   return (
     <Dialog
@@ -334,24 +440,17 @@ export function FileBrowserDialog({
             }}
           />
         </div>
-        {filters && filters.length > 0 && (
-          <HTMLSelect
-            value={selectedFilter?.label ?? '__all__'}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSelectedFilter(
-                val === '__all__' ? null : (filters.find((f) => f.label === val) ?? null),
-              );
-              if (mode === 'open') setFilename('');
-            }}
-            options={[
-              ...filters.map((f) => ({ label: f.label, value: f.label })),
-              { label: 'All files', value: '__all__' },
-            ]}
-          />
-        )}
+        <HTMLSelect
+          value={filterValue}
+          onChange={(e) => handleFilterChange(e.target.value)}
+          options={filterOptions}
+        />
         {confirmError && <span className="fb-confirm-error">{confirmError}</span>}
-        <Button intent="primary" disabled={!filename || isConfirming} onClick={handleConfirm}>
+        <Button
+          intent="primary"
+          disabled={!filename || isConfirming || isLoading}
+          onClick={() => handleConfirm()}
+        >
           {mode === 'save' ? 'Save' : 'Open'}
         </Button>
         <Button onClick={onClose}>Cancel</Button>

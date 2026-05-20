@@ -1,14 +1,14 @@
 # Mirror - AI-assisted Translation Editor
 
-An Electron app with dual-build support (Electron desktop + pure web).
+A Tauri desktop app with a web fallback (pure Vite/React when run outside Tauri).
 
 ## Development
 
 ```sh
 bun run dev           # Start web dev server (Vite)
-bun run electron:dev  # Start Electron app in dev mode
+bun run tauri:dev     # Start Tauri app in dev mode
 bun run build         # Build for web
-bun run electron:build # Build Electron app for distribution
+bun run tauri:build   # Build Tauri app for distribution
 bun run test          # Run unit tests (Bun test runner)
 ```
 
@@ -36,7 +36,7 @@ src/
 │   ├── AboutDialog.tsx  # About dialog
 │   ├── LoadTextDialog.tsx   # Dialog for loading source text
 │   ├── PreferencesDialog.tsx # Autosave and app preferences
-│   ├── FileBrowserDialog.tsx # Custom file browser (Electron only — uses IPC)
+│   ├── FileBrowserDialog.tsx # Custom file browser (Tauri only — uses native IPC)
 │   ├── FileBrowserDialog.css
 │   └── editor/
 │       ├── EditorPane.tsx        # Single editor pane (source or translation)
@@ -66,8 +66,8 @@ src/
 │   └── index.ts         # i18next configuration
 ├── locales/
 │   └── en.yaml          # English translations (add more locales here)
-├── types/
-│   └── electron.d.ts    # Electron API type declarations (window.electronAPI)
+├── platform/
+│   └── index.ts         # Native API layer (Tauri IPC or null for pure web)
 ├── utils/
 │   ├── docxConvert.ts      # DOCX → Markdown (mammoth + turndown)
 │   ├── fileIO.ts           # File read/download utilities
@@ -78,20 +78,15 @@ src/
 ├── style.css            # Global styles
 └── theme.scss           # Theme definitions (colors, component overrides)
 
-electron/
-├── main.ts              # Electron main process (IPC handlers incl. file system ops)
-└── preload.cts          # Preload script (contextBridge → window.electronAPI)
-
+src-tauri/               # Tauri Rust backend (IPC handlers, window management)
 dist/                    # Vite build output (web)
-electron-dist/           # Compiled Electron code
-release/                 # Electron-builder output
 ```
 
 ## Tech Stack
 
-- **Bun** - Package management and Electron compilation
+- **Bun** - Package management and script runner
 - **Vite** - Frontend bundling with React plugin
-- **Electron** - Desktop builds
+- **Tauri** - Desktop builds (Rust backend)
 - **React 19** - UI framework
 - **TypeScript** - Throughout
 - **BlueprintJS 6** - Component library (accessed via abstraction layer)
@@ -100,6 +95,10 @@ release/                 # Electron-builder output
 - **tiptap-markdown** - Markdown as the editor's native exchange format
 - **mammoth** - DOCX → HTML conversion for file import
 - **turndown** - HTML → Markdown (used for DOCX import path and v1 project migration)
+
+## Native API Layer
+
+`src/platform/index.ts` exports `nativeAPI: NativeAPI | null`. It returns a Tauri implementation when running inside Tauri (`__TAURI_INTERNALS__` present), or `null` in the pure-web build. All desktop-only features (file system access, window title, close handling) are gated on `nativeAPI`.
 
 ## UI Component Abstraction
 
@@ -186,8 +185,8 @@ Between the two editor panes sits a **ruler bar** (`RulerBar.tsx` + `RulerBar.cs
 ## Guidelines
 
 - Use `bun` instead of npm/yarn
-- Frontend code in `src/` must work in both web and Electron contexts
-- Check `window.electronAPI?.isElectron` to detect Electron environment
+- Frontend code in `src/` must work in both web and Tauri contexts
+- Use `nativeAPI` from `src/platform` (not direct Tauri imports) in UI components
 - All backend/AI calls will be made directly from the frontend (no server in this repo)
 - Add new UI components to the abstraction layer in `src/components/index.ts`
 - Add new translatable strings to locale YAML files

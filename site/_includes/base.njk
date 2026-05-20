@@ -479,19 +479,17 @@
       var platforms = {
         linux: {
           label: "Linux",
-          tauri: "mirror-" + tag + "-linux-tauri.AppImage",
-          electron: "mirror-" + tag + "-linux.zip"
+          primary: "mirror-" + tag + "-linux-tauri.AppImage",
+          secondary: "mirror-" + tag + "-linux-tauri.deb"
         },
         macos: {
           label: "macOS",
-          tauriArm: "mirror-" + tag + "-macos-tauri-arm64.dmg",
-          tauriUniversal: "mirror-" + tag + "-macos-tauri-universal.dmg",
-          electron: "mirror-" + tag + "-macos.zip"
+          primary: "mirror-" + tag + "-macos-tauri-arm64.dmg",
+          secondary: "mirror-" + tag + "-macos-tauri-universal.dmg"
         },
         windows: {
           label: "Windows",
-          tauri: "mirror-" + tag + "-windows-tauri-setup.exe",
-          electron: "mirror-" + tag + "-windows.zip"
+          primary: "mirror-" + tag + "-windows-tauri-setup.exe"
         }
       };
 
@@ -504,7 +502,7 @@
       }
 
       var detected = detect();
-      var primary = platforms[detected];
+      var current = platforms[detected];
 
       var optionsEl = document.getElementById("download-options");
       optionsEl.innerHTML = "";
@@ -518,12 +516,13 @@
       }
 
       if (detected === "macos") {
-        optionsEl.appendChild(makeBtn(base + primary.tauriArm, "btn-primary", "Download for macOS (Tauri \xb7 arm64)"));
-        optionsEl.appendChild(makeBtn(base + primary.tauriUniversal, "btn-primary btn-primary--outline", "Download for macOS (Tauri \xb7 Universal)"));
-        optionsEl.appendChild(makeBtn(base + primary.electron, "btn-primary btn-primary--outline", "Download for macOS (Electron)"));
+        optionsEl.appendChild(makeBtn(base + current.primary, "btn-primary", "Download for macOS (arm64)"));
+        optionsEl.appendChild(makeBtn(base + current.secondary, "btn-primary btn-primary--outline", "Download for macOS (Universal)"));
+      } else if (detected === "linux") {
+        optionsEl.appendChild(makeBtn(base + current.primary, "btn-primary", "Download for Linux (.AppImage)"));
+        optionsEl.appendChild(makeBtn(base + current.secondary, "btn-primary btn-primary--outline", "Download for Linux (.deb)"));
       } else {
-        optionsEl.appendChild(makeBtn(base + primary.tauri, "btn-primary", "Download for " + primary.label + " (Tauri)"));
-        optionsEl.appendChild(makeBtn(base + primary.electron, "btn-primary btn-primary--outline", "Download for " + primary.label + " (Electron)"));
+        optionsEl.appendChild(makeBtn(base + current.primary, "btn-primary", "Download for " + current.label));
       }
 
       var othersEl = document.getElementById("other-platforms");
@@ -531,7 +530,7 @@
         if (key === detected) return;
         var p = platforms[key];
         var a = document.createElement("a");
-        a.href = base + (p.tauriUniversal || p.tauri);
+        a.href = base + p.primary;
         a.className = "btn-secondary";
         a.textContent = p.label;
         othersEl.appendChild(a);

@@ -6,27 +6,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  linux:
-    uses: ./.github/workflows/build-linux.yml
-    with:
-      publish: ${{ github.event_name == 'release' }}
-    permissions:
-      contents: write
-
-  macos:
-    uses: ./.github/workflows/build-macos.yml
-    with:
-      publish: ${{ github.event_name == 'release' }}
-    permissions:
-      contents: write
-
-  windows:
-    uses: ./.github/workflows/build-windows.yml
-    with:
-      publish: ${{ github.event_name == 'release' }}
-    permissions:
-      contents: write
-
   tauri-linux:
     uses: ./.github/workflows/tauri-build-linux.yml
     with:

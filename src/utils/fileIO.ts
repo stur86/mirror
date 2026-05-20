@@ -151,7 +151,7 @@ export async function saveFileToHandle(
   content: string,
 ): Promise<void> {
   if (typeof handle === 'string') {
-    await nativeAPI!.saveProjectToPath(handle, content);
+    await nativeAPI!.saveTextFileAt(handle, content);
     return;
   }
   const writable = await handle.createWritable();

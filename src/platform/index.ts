@@ -11,7 +11,7 @@ export interface NativeAPI {
   toggleFullscreen(): void;
   onFullscreenChange(cb: (isFullscreen: boolean) => void): () => void;
   close(): void;
-  saveProjectToPath(path: string, content: string): Promise<void>;
+  saveTextFileAt(path: string, content: string): Promise<void>;
   listDirectory(path: string): Promise<{ entries: Array<{ name: string; isDirectory: boolean }> } | { error: string }>;
   getStandardPaths(): Promise<{ home: string; desktop: string; documents: string; downloads: string }>;
   createDirectory(path: string): Promise<{ ok: boolean }>;
@@ -20,10 +20,6 @@ export interface NativeAPI {
 
 function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
-}
-
-function isElectron(): boolean {
-  return typeof window !== 'undefined' && !!window.electronAPI?.isElectron;
 }
 
 function createTauriAPI(): NativeAPI {
@@ -62,8 +58,8 @@ function createTauriAPI(): NativeAPI {
       void invoke('close_window');
     },
 
-    async saveProjectToPath(path, content) {
-      await invoke('save_to_path', { filePath: path, content });
+    async saveTextFileAt(path, content) {
+      await invoke('save_text_file_at', { filePath: path, content });
     },
 
     listDirectory(path) {
@@ -84,27 +80,4 @@ function createTauriAPI(): NativeAPI {
   };
 }
 
-function createElectronAPI(): NativeAPI {
-  const e = window.electronAPI!;
-  return {
-    isNative: true,
-    startDragging() {}, // Electron drag is handled via CSS -webkit-app-region
-    setDirty: (isDirty) => e.setDirty(isDirty),
-    onCloseRequested: (cb) => e.onCloseRequested(cb),
-    confirmClose: () => e.confirmClose(),
-    toggleFullscreen: () => e.toggleFullscreen(),
-    onFullscreenChange: (cb) => e.onFullscreenChange(cb),
-    close: () => window.close(),
-    saveProjectToPath: (path, content) => e.saveProjectToPath(path, content),
-    listDirectory: (path) => e.listDirectory(path),
-    getStandardPaths: () => e.getStandardPaths(),
-    createDirectory: (path) => e.createDirectory(path),
-    readFile: (path) => e.readFile(path),
-  };
-}
-
-export const nativeAPI: NativeAPI | null = isTauri()
-  ? createTauriAPI()
-  : isElectron()
-  ? createElectronAPI()
-  : null;
+export const nativeAPI: NativeAPI | null = isTauri() ? createTauriAPI() : null;
